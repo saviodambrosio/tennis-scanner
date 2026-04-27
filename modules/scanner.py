@@ -75,9 +75,15 @@ def get_quote_sofascore(event_id):
                     return round(1 + int(n) / int(d), 3)
                 except:
                     return None
-            q1 = fraz_a_dec(choices[0].get("fractionalValue", ""))
-            q2 = fraz_a_dec(choices[1].get("fractionalValue", ""))
-            return q1, q2
+            # Sofascore usa name="1" per home e name="2" per away.
+            # Cercare per nome evita errori se l'ordine posizionale varia.
+            home_c = next((c for c in choices if c.get("name") == "1"), None)
+            away_c = next((c for c in choices if c.get("name") == "2"), None)
+            if home_c and away_c:
+                return (fraz_a_dec(home_c.get("fractionalValue", "")),
+                        fraz_a_dec(away_c.get("fractionalValue", "")))
+            # Fallback posizionale se i nomi non corrispondono allo schema atteso
+            return fraz_a_dec(choices[0].get("fractionalValue", "")), fraz_a_dec(choices[1].get("fractionalValue", ""))
     except:
         pass
     return None, None
@@ -287,6 +293,14 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn):
             senza_quote.append(f"{p['p1']} vs {p['p2']}")
             continue
 
+        # Guard: se le due quote sono quasi identiche la normalizzazione
+        # home/away non è riuscita a risolvere l'ambiguità (split 50/50
+        # tra bookmaker). Meglio saltare che rischiare un segnale falso.
+        if abs(q1 - q2) < 0.15:
+            print(f"  ⚠️  Quote ambigue scartate: {p['p1']} vs {p['p2']} ({q1} / {q2})")
+            senza_quote.append(f"{p['p1']} vs {p['p2']} (quote ambigue: {q1}/{q2})")
+            continue
+
         # Calcola segnale P1
         segnale = genera_segnale(n1, e1, n2, e2, q1)
 
@@ -384,9 +398,14 @@ def scansiona(soglia_ev=0.05):
     # Fonte 1: odds-api.io
     print("📅 Recupero partite da Odds-API.io...")
     partite_apiio = get_partite_con_quote_oggi()
-    partite_apiio = [p for p in partite_apiio if any(
-        x in p['torneo'] for x in ['ATP', 'WTA', 'Challenger']
-    )]
+    TORNEI_VALIDI = ['ATP -', 'WTA -', 'Challenger -']
+    TORNEI_ESCLUDI = ['125K', '125k', 'UTR', 'ITF', 'WTA 125']
+
+    partite_apiio = [
+        p for p in partite_apiio
+        if any(x in p['torneo'] for x in TORNEI_VALIDI)
+        and not any(x in p['torneo'] for x in TORNEI_ESCLUDI)
+    ]
     print(f"✅ {len(partite_apiio)} partite ATP/WTA trovate\n")
 
     vb, nv, nt, sq = analizza_partite(

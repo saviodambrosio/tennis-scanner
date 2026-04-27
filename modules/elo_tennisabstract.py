@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import os
 import sys
+import unicodedata
 from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -152,36 +153,88 @@ def _carica_da_cache():
         }
     return ratings
 
+_PARTICELLE = frozenset({
+    'de', 'van', 'del', 'di', 'dos', 'da', 'den', 'der', 'von', 'le', 'la', 'du', 'el'
+})
+
+def _norm(s):
+    """Rimuove accenti unicode e converte in minuscolo."""
+    nfkd = unicodedata.normalize('NFKD', s)
+    return ''.join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
+
+def _parse_nome(nome):
+    """Restituisce (primo_nome, cognome) gestendo particelle nobiliarie.
+
+    Se il primo token è una particella (de, van, …) l'intero nome è cognome.
+    Altrimenti: primo token = nome, resto = cognome.
+    """
+    parti = nome.strip().split()
+    if not parti:
+        return '', ''
+    if len(parti) == 1:
+        return '', parti[0]
+    fn = parti[0]
+    if _norm(fn).rstrip('.') in _PARTICELLE:
+        return '', nome
+    return fn, ' '.join(parti[1:])
+
 def trova_giocatore_ta(nome, ratings_ta):
     """
-    Cerca un giocatore nei rating Tennis Abstract.
-    Gestisce varianti di nome.
+    Cerca un giocatore nei rating Tennis Abstract con matching robusto:
+    - normalizzazione accenti (é→e, ü→u, ñ→n)
+    - gestione particelle (de, van, del, di, dos, da, …)
+    - matching iniziale+cognome ("A. De Minaur" → "Alex De Minaur")
+    - cognome singolo solo se non ambiguo
     """
+    if not nome:
+        return None, None
+
+    # 1. Exact match
     if nome in ratings_ta:
         return nome, ratings_ta[nome]
 
-    # Prova case-insensitive
-    nome_lower = nome.lower()
+    # 2. Case-insensitive
     for k in ratings_ta:
-        if k.lower() == nome_lower:
+        if k.lower() == nome.lower():
             return k, ratings_ta[k]
 
-    # Prova matching su cognome
-    cognome = nome.split()[-1].lower()
-    candidati = [(k, v) for k, v in ratings_ta.items()
-                 if k.split()[-1].lower() == cognome]
-    if len(candidati) == 1:
-        return candidati[0]
+    # 3. Normalizzazione accenti
+    nome_norm = _norm(nome)
+    for k in ratings_ta:
+        if _norm(k) == nome_norm:
+            return k, ratings_ta[k]
 
-    # Prova matching su primo nome + cognome
-    if len(nome.split()) >= 2:
-        iniziale = nome.split()[0][0].lower()
-        cognome = nome.split()[-1].lower()
-        candidati = [(k, v) for k, v in ratings_ta.items()
-                     if k.split()[-1].lower() == cognome
-                     and k.split()[0][0].lower() == iniziale]
+    # 4. Matching nome+cognome con particelle e formato iniziale
+    fn_in, ln_in = _parse_nome(nome)
+    fn_in_norm = _norm(fn_in)
+    ln_in_norm = _norm(ln_in)
+    is_initial = bool(fn_in_norm) and len(fn_in_norm.rstrip('.')) == 1
+
+    if ln_in_norm:
+        candidati = []
+        for k, v in ratings_ta.items():
+            fn_k, ln_k = _parse_nome(k)
+            if _norm(ln_k) != ln_in_norm:
+                continue
+            if fn_in_norm:
+                if is_initial:
+                    ini = fn_in_norm.rstrip('.')
+                    if _norm(fn_k) and _norm(fn_k)[0] == ini:
+                        candidati.append((k, v))
+                else:
+                    if _norm(fn_k) == fn_in_norm:
+                        candidati.append((k, v))
+            else:
+                candidati.append((k, v))
         if len(candidati) == 1:
             return candidati[0]
+
+    # 5. Solo ultima parola (cognome singolo), solo se non ambiguo
+    ultimo_norm = _norm(nome.split()[-1])
+    candidati_cog = [(k, v) for k, v in ratings_ta.items()
+                     if _norm(k.split()[-1]) == ultimo_norm]
+    if len(candidati_cog) == 1:
+        return candidati_cog[0]
 
     return None, None
 

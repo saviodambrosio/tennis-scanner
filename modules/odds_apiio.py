@@ -62,8 +62,7 @@ def get_quote_evento(event_id):
         data = resp.json()
         bookmakers = data.get("bookmakers", {})
 
-        quote_home = []
-        quote_away = []
+        pairs = []  # (home_odds, away_odds) per bookmaker, solo se entrambe valide
 
         for bk_name, mercati in bookmakers.items():
             for mercato in mercati:
@@ -73,17 +72,32 @@ def get_quote_evento(event_id):
                         try:
                             qh = float(odds[0].get("home", 0))
                             qa = float(odds[0].get("away", 0))
-                            if qh > 1.0:
-                                quote_home.append(qh)
-                            if qa > 1.0:
-                                quote_away.append(qa)
+                            if qh > 1.0 and qa > 1.0:
+                                pairs.append((qh, qa))
                         except:
                             pass
 
-        # Prendi la quota migliore (più alta) disponibile
-        q1 = round(max(quote_home), 3) if quote_home else None
-        q2 = round(max(quote_away), 3) if quote_away else None
+        if not pairs:
+            return None, None
 
+        # In tennis non esiste vero home/away: bookmaker diversi possono
+        # invertire la convenzione per lo stesso evento. Esempio: Bet365
+        # mette Nava come "home" e Bwin mette Vacherot come "home".
+        # Correzione: determina la convenzione di maggioranza e normalizza
+        # le coppie di minoranza prima di aggregare.
+        home_favored_count = sum(1 for qh, qa in pairs if qh < qa)
+        majority_home_is_favorite = home_favored_count > len(pairs) / 2
+
+        quote_home = []
+        quote_away = []
+        for qh, qa in pairs:
+            if (qh < qa) != majority_home_is_favorite:
+                qh, qa = qa, qh  # bookmaker con home/away invertito
+            quote_home.append(qh)
+            quote_away.append(qa)
+
+        q1 = round(max(quote_home), 3)
+        q2 = round(max(quote_away), 3)
         return q1, q2
 
     except Exception as e:
