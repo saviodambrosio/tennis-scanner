@@ -142,3 +142,84 @@ def calcola_forma(nome, partite_recenti, superficie=None, n_partite=10):
 
 def aggiusta_elo_per_forma(elo_base, forma_score):
     return round(elo_base + (forma_score * 150), 1)
+
+
+def calcola_fatica(nome, partite_recenti_dict, giorni=3):
+    if not nome or not partite_recenti_dict:
+        return 0.0
+    cutoff = pd.Timestamp.now() - pd.Timedelta(days=giorni)
+    partite = [p for p in partite_recenti_dict.get(nome, []) if p['data'] >= cutoff]
+    n = len(partite)
+    if n == 0:
+        return 0.0
+    elif n == 1:
+        return -0.3
+    elif n == 2:
+        return -0.6
+    else:
+        return -1.0
+
+
+def calcola_h2h(nome1, nome2, partite_recenti_dict):
+    try:
+        from modules.elo_tennisabstract import trova_giocatore_ta
+    except ImportError:
+        from elo_tennisabstract import trova_giocatore_ta
+
+    files = [
+        'data/storico/risultati_recenti.csv',
+        'data/storico/atp_2025_tml.csv',
+        'data/storico/atp_2026_tml.csv',
+    ]
+    dfs = []
+    for f in files:
+        if os.path.exists(f):
+            try:
+                dfs.append(pd.read_csv(f, low_memory=False))
+            except Exception:
+                pass
+
+    if not dfs:
+        return 0.0
+
+    df = pd.concat(dfs, ignore_index=True)
+    df['tourney_date'] = pd.to_datetime(
+        df['tourney_date'].astype(str), format='%Y%m%d', errors='coerce'
+    )
+    df = df.dropna(subset=['tourney_date', 'winner_name', 'loser_name'])
+
+    tutti_nomi = set(df['winner_name'].dropna()) | set(df['loser_name'].dropna())
+    nomi_dict = {n: {} for n in tutti_nomi}
+
+    n1_match, _ = trova_giocatore_ta(nome1, nomi_dict)
+    n2_match, _ = trova_giocatore_ta(nome2, nomi_dict)
+
+    if not n1_match or not n2_match:
+        return 0.0
+
+    mask = (
+        ((df['winner_name'] == n1_match) & (df['loser_name'] == n2_match)) |
+        ((df['winner_name'] == n2_match) & (df['loser_name'] == n1_match))
+    )
+    h2h_df = df[mask].copy()
+
+    n_totali = len(h2h_df)
+    if n_totali < 3:
+        return 0.0
+
+    oggi = pd.Timestamp.now()
+    score_pesato = 0.0
+    peso_totale = 0.0
+
+    for _, row in h2h_df.iterrows():
+        anni_fa = max(0.0, (oggi - row['tourney_date']).days / 365.25)
+        peso = 0.5 ** (anni_fa / 2.0)  # half-life 2 anni
+        peso_totale += peso
+        if row['winner_name'] == n1_match:
+            score_pesato += peso
+
+    if peso_totale == 0:
+        return 0.0
+
+    win_rate = score_pesato / peso_totale
+    return round((win_rate * 2) - 1, 3)

@@ -9,7 +9,7 @@ from modules.elo_tennisabstract import (
 )
 from modules.odds_apiio import get_partite_con_quote_oggi, get_quote_evento as get_quote_apiio
 from modules.signals import genera_segnale
-from modules.forma_recente import carica_partite_recenti, calcola_forma, aggiusta_elo_per_forma
+from modules.forma_recente import carica_partite_recenti, calcola_forma, aggiusta_elo_per_forma, calcola_h2h, calcola_fatica
 from modules.data_2025 import scarica_e_salva_2026
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
@@ -316,6 +316,8 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
         elo_usato = f"TA-{sup}"
 
         # Aggiustamento per forma recente
+        n1_fr = None
+        n2_fr = None
         if partite_recenti and nomi_recenti_dict:
             n1_fr, _ = trova_giocatore_ta(n1, nomi_recenti_dict)
             n2_fr, _ = trova_giocatore_ta(n2, nomi_recenti_dict)
@@ -324,6 +326,22 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             e1 = aggiusta_elo_per_forma(e1, forma1)
             e2 = aggiusta_elo_per_forma(e2, forma2)
             elo_usato = f"TA-{sup}+forma"
+
+        h2h = calcola_h2h(n1, n2, partite_recenti)
+        # H2H aggiusta Elo di max ±75 punti
+        e1 = e1 + (h2h * 75)
+        e2 = e2 - (h2h * 75)
+        if h2h != 0:
+            elo_usato += f"+h2h({h2h:+.2f})"
+
+        if partite_recenti:
+            fatica1 = calcola_fatica(n1_fr if n1_fr else n1, partite_recenti)
+            fatica2 = calcola_fatica(n2_fr if n2_fr else n2, partite_recenti)
+            # Fatica aggiusta Elo di max -100 punti (solo negativo)
+            e1 = e1 + (fatica1 * 100)
+            e2 = e2 + (fatica2 * 100)
+            if fatica1 != 0 or fatica2 != 0:
+                elo_usato += f"+fat({fatica1:.1f}/{fatica2:.1f})"
 
         # Quote
         q1, q2 = get_quote_fn(p['id'])
