@@ -9,6 +9,8 @@ from modules.elo_tennisabstract import (
 )
 from modules.odds_apiio import get_partite_con_quote_oggi, get_quote_evento as get_quote_apiio
 from modules.signals import genera_segnale
+from modules.forma_recente import carica_partite_recenti, calcola_forma, aggiusta_elo_per_forma
+from modules.data_2025 import scarica_e_salva_2026
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -258,7 +260,7 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
     wb.save(filepath)
     print(f"\n💾 {aggiunte} nuove value bet salvate | {saltate} duplicati saltati → {filepath}")
 
-def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn):
+def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recenti=None, nomi_recenti_dict=None):
     value_bets = []
     no_value = []
     non_trovati = []
@@ -284,6 +286,16 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn):
         e1 = r1.get(sup, r1['elo'])
         e2 = r2.get(sup, r2['elo'])
         elo_usato = f"TA-{sup}"
+
+        # Aggiustamento per forma recente
+        if partite_recenti and nomi_recenti_dict:
+            n1_fr, _ = trova_giocatore_ta(n1, nomi_recenti_dict)
+            n2_fr, _ = trova_giocatore_ta(n2, nomi_recenti_dict)
+            forma1 = calcola_forma(n1_fr, partite_recenti, superficie=sup) if n1_fr else 0.0
+            forma2 = calcola_forma(n2_fr, partite_recenti, superficie=sup) if n2_fr else 0.0
+            e1 = aggiusta_elo_per_forma(e1, forma1)
+            e2 = aggiusta_elo_per_forma(e2, forma2)
+            elo_usato = f"TA-{sup}+forma"
 
         # Quote
         q1, q2 = get_quote_fn(p['id'])
@@ -396,6 +408,28 @@ def scansiona(soglia_ev=0.05):
     print(f"✅ {len(ratings_ta)} giocatori caricati\n")
 
     # ==========================================
+    # DATI 2026 + FORMA RECENTE
+    # ==========================================
+    csv_2026 = 'data/storico/atp_2026_tml.csv'
+    deve_scaricare = (
+        not os.path.exists(csv_2026)
+        or (datetime.now() - datetime.fromtimestamp(os.path.getmtime(csv_2026))).total_seconds() > 86400
+    )
+    if deve_scaricare:
+        print("📥 Aggiornamento dati 2026 da TML-Database...")
+        try:
+            scarica_e_salva_2026()
+        except Exception as e:
+            print(f"  ⚠️  Download 2026 fallito: {e}")
+    else:
+        print("📦 Dati 2026 già aggiornati (meno di 24h)")
+
+    print("📈 Caricamento forma recente (ultimi 30 giorni)...")
+    partite_recenti = carica_partite_recenti(giorni=30)
+    nomi_recenti_dict = {nome: {'elo': 0} for nome in partite_recenti}
+    print(f"✅ Forma disponibile per {len(partite_recenti)} giocatori\n")
+
+    # ==========================================
     # RECUPERA PARTITE
     # ==========================================
     all_value_bets = []
@@ -417,7 +451,8 @@ def scansiona(soglia_ev=0.05):
     print(f"✅ {len(partite_apiio)} partite ATP/WTA trovate\n")
 
     vb, nv, nt, sq = analizza_partite(
-        partite_apiio, ratings_ta, soglia_ev, get_quote_apiio
+        partite_apiio, ratings_ta, soglia_ev, get_quote_apiio,
+        partite_recenti, nomi_recenti_dict
     )
     all_value_bets.extend(vb)
     all_no_value.extend(nv)
@@ -439,7 +474,8 @@ def scansiona(soglia_ev=0.05):
     if partite_extra:
         print(f"✅ {len(partite_extra)} partite extra solo su Sofascore\n")
         vb2, nv2, nt2, sq2 = analizza_partite(
-            partite_extra, ratings_ta, soglia_ev, get_quote_sofascore
+            partite_extra, ratings_ta, soglia_ev, get_quote_sofascore,
+            partite_recenti, nomi_recenti_dict
         )
         all_value_bets.extend(vb2)
         all_no_value.extend(nv2)
