@@ -19,9 +19,10 @@ SOFASCORE_URL = "https://api.sofascore.com/api/v1/sport/tennis/scheduled-events/
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 try:
-    from config import ODDS_API_IO_KEY
+    from config import ODDS_API_IO_KEY, EV_MAX
 except:
     ODDS_API_IO_KEY = ""
+    EV_MAX = None
 
 SUPERFICIE_MAP = {
     'clay': 'clay', 'red clay': 'clay', 'clay (red)': 'clay',
@@ -139,6 +140,11 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
     bianco       = PatternFill("solid", fgColor="FFFFFF")
     giallo       = PatternFill("solid", fgColor="FFEB9C")
     azzurro      = PatternFill("solid", fgColor="BDD7EE")
+    arancione_h  = PatternFill("solid", fgColor="ED7D31")
+    verde_clv_h  = PatternFill("solid", fgColor="70AD47")
+    blu_ap_h     = PatternFill("solid", fgColor="4472C4")
+    arancione_d  = PatternFill("solid", fgColor="FCE4D6")
+    verde_clv_d  = PatternFill("solid", fgColor="E2EFDA")
     bordo = Border(
         left=Side(style='thin'), right=Side(style='thin'),
         top=Side(style='thin'), bottom=Side(style='thin')
@@ -167,12 +173,21 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         headers = [
             "Data", "Ora", "🎯 PUNTA SU", "Avversario",
             "Torneo", "Superficie", "Quota", "Quota Min",
-            "Prob Elo %", "EV %", "Elo Usato", "Fonte", "Esito", "Profitto"
+            "Prob Elo %", "EV %", "Elo Usato", "Fonte",
+            "Quota Apertura", "Quota Chiusura", "CLV %",
+            "Esito", "Profitto"
         ]
+        # colonne speciali: (fill, font_color)
+        header_speciali = {
+            13: (blu_ap_h,      "FFFFFF"),
+            14: (arancione_h,   "FFFFFF"),
+            15: (verde_clv_h,   "FFFFFF"),
+        }
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
-            cell.fill = verde_scuro
-            cell.font = Font(bold=True, color="FFFFFF", size=11)
+            fill_h, fc = header_speciali.get(col, (verde_scuro, "FFFFFF"))
+            cell.fill = fill_h
+            cell.font = Font(bold=True, color=fc, size=11)
             cell.alignment = Alignment(horizontal="center", vertical="center")
             cell.border = bordo
 
@@ -211,6 +226,9 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             round(v['ev'] * 100, 1),
             v.get('elo_usato', ''),
             v.get('source', ''),
+            v['quota_p1'],              # Quota Apertura (snapshot al momento scoperta)
+            "",                         # Quota Chiusura (manuale)
+            "",                         # CLV % (manuale)
             "",
             ""
         ]
@@ -245,6 +263,16 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
                     cell.fill = giallo
                 else:
                     cell.fill = fill
+            # Quota Apertura: stesso stile quota
+            elif col == 13:
+                cell.fill = fill
+                cell.font = Font(bold=True, size=12)
+            # Quota Chiusura: vuota, sfondo arancione chiaro
+            elif col == 14:
+                cell.fill = arancione_d
+            # CLV %: vuota, sfondo verde chiaro
+            elif col == 15:
+                cell.fill = verde_clv_d
             else:
                 cell.fill = fill
 
@@ -252,7 +280,7 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         aggiunte += 1
 
     # Larghezze colonne
-    larghezze = [12, 8, 28, 22, 30, 10, 8, 10, 10, 8, 12, 12, 8, 10]
+    larghezze = [12, 8, 28, 22, 30, 10, 8, 10, 10, 8, 12, 12, 14, 14, 10, 8, 10]
     for col, width in enumerate(larghezze, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -358,7 +386,95 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
 
     return value_bets, no_value, non_trovati, senza_quote
 
-def scansiona(soglia_ev=0.05):
+def aggiorna_esiti_excel(
+    csv_path='data/storico/risultati_recenti.csv',
+    xlsx_path='data/value_bets_log.xlsx'
+):
+    if not os.path.exists(csv_path):
+        print("  risultati_recenti.csv non trovato — skip aggiornamento esiti")
+        return
+    if not os.path.exists(xlsx_path):
+        print("  value_bets_log.xlsx non trovato — skip aggiornamento esiti")
+        return
+
+    import pandas as pd
+    df = pd.read_csv(csv_path)
+
+    # Per ogni data costruisci set distinti di vincitori e perdenti
+    winners_per_data = {}
+    losers_per_data  = {}
+    for _, row in df.iterrows():
+        d = int(row['tourney_date'])
+        winners_per_data.setdefault(d, set()).add(row['winner_name'])
+        losers_per_data.setdefault(d, set()).add(row['loser_name'])
+
+    wb = load_workbook(xlsx_path)
+    ws = wb.active
+
+    # Rileva posizioni colonne dalla riga header
+    header_map = {ws.cell(1, c).value: c for c in range(1, ws.max_column + 1)}
+    col_data     = header_map.get("Data",         1)
+    col_gioc     = header_map.get("🎯 PUNTA SU",  3)
+    col_quota    = header_map.get("Quota",        7)
+    col_esito    = header_map.get("Esito",        16)
+    col_profitto = header_map.get("Profitto",     17)
+
+    aggiornati = 0
+    n_w = 0
+    n_l = 0
+
+    for row_idx in range(2, ws.max_row + 1):
+        esito_val = ws.cell(row_idx, col_esito).value
+        if esito_val not in (None, ''):
+            continue
+
+        data_val = ws.cell(row_idx, col_data).value
+        gioc_val = ws.cell(row_idx, col_gioc).value
+        if not data_val or not gioc_val:
+            continue
+
+        try:
+            if isinstance(data_val, str):
+                data_int = int(data_val.replace('-', ''))
+            else:
+                data_int = int(data_val.strftime('%Y%m%d'))
+        except Exception:
+            continue
+
+        giocatore = str(gioc_val).replace('✅ ', '').strip()
+
+        winners = winners_per_data.get(data_int, set())
+        losers  = losers_per_data.get(data_int, set())
+        tutti   = winners | losers
+        if not tutti:
+            continue
+
+        nomi_dict = {n: {} for n in tutti}
+        nome_match, _ = trova_giocatore_ta(giocatore, nomi_dict)
+        if nome_match is None:
+            continue
+
+        if nome_match in winners:
+            esito = 'W'
+            try:
+                quota = float(ws.cell(row_idx, col_quota).value)
+                profitto = round(quota - 1, 2)
+            except (TypeError, ValueError):
+                profitto = 1
+            n_w += 1
+        else:
+            esito, profitto = 'L', -1
+            n_l += 1
+
+        ws.cell(row_idx, col_esito).value    = esito
+        ws.cell(row_idx, col_profitto).value = profitto
+        aggiornati += 1
+
+    wb.save(xlsx_path)
+    print(f"\n📊 Esiti aggiornati: {aggiornati} ({n_w} W, {n_l} L) → {xlsx_path}")
+
+
+def scansiona(soglia_ev=0.05, ev_max=None):
     print(f"{'='*65}")
     print(f"  🎾 TENNIS SCANNER - {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     print(f"{'='*65}\n")
@@ -423,6 +539,22 @@ def scansiona(soglia_ev=0.05):
             print(f"  ⚠️  Download 2026 fallito: {e}")
     else:
         print("📦 Dati 2026 già aggiornati (meno di 24h)")
+
+    csv_recenti = 'data/storico/risultati_recenti.csv'
+    deve_aggiornare = (
+        not os.path.exists(csv_recenti)
+        or (datetime.now() - datetime.fromtimestamp(
+            os.path.getmtime(csv_recenti))).total_seconds() > 86400
+    )
+    if deve_aggiornare:
+        print("Aggiornamento risultati recenti da Tennisexplorer...")
+        try:
+            from modules.data_2025 import scarica_risultati_recenti_tennisexplorer
+            scarica_risultati_recenti_tennisexplorer(giorni=60)
+        except Exception as e:
+            print(f"  Download risultati recenti fallito: {e}")
+    else:
+        print("Risultati recenti gia aggiornati (meno di 24h)")
 
     print("📈 Caricamento forma recente (ultimi 30 giorni)...")
     partite_recenti = carica_partite_recenti(giorni=30)
@@ -491,6 +623,14 @@ def scansiona(soglia_ev=0.05):
             seen.add(key)
             value_bets_dedup.append(v)
 
+    # Filtro EV massimo
+    if ev_max is not None:
+        prima = len(value_bets_dedup)
+        value_bets_dedup = [v for v in value_bets_dedup if v['ev'] <= ev_max]
+        escluse = prima - len(value_bets_dedup)
+        if escluse:
+            print(f"⚠️  {escluse} value bet escluse per EV > {ev_max*100:.0f}%\n")
+
     # ==========================================
     # OUTPUT
     # ==========================================
@@ -526,6 +666,7 @@ def scansiona(soglia_ev=0.05):
             print(f"  - {n}")
 
     salva_value_bets_excel(value_bets_dedup)
+    aggiorna_esiti_excel()
 
 if __name__ == "__main__":
-    scansiona()
+    scansiona(ev_max=EV_MAX)

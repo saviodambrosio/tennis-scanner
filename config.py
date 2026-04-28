@@ -14,6 +14,7 @@ ODDS_API_IO_KEY = "97d4118388bad3aca1519306bcadbdf54fa4084eaacf97699c667b6e9986e
 
 # --- SOGLIE ALGORITMO ---
 EV_MINIMO = 0.05          # Vantaggio minimo richiesto (5%)
+EV_MAX = None             # Soglia massima EV (es. 0.60 esclude EV > 60%); None = nessun filtro
 ODDS_MIN = 1.40           # Quota minima accettata (filtra le certezze)
 ODDS_MAX = 6.00           # Quota massima accettata (filtra i longshot)
 
