@@ -301,6 +301,14 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn):
             senza_quote.append(f"{p['p1']} vs {p['p2']} (quote ambigue: {q1}/{q2})")
             continue
 
+        # Sanity check Elo: quota altissima ma l'Elo favorisce quel giocatore → quote invertite
+        if q1 > 8.0 and e1 > e2:
+            print(f"  🔄 Quote invertite per sanity check Elo: {p['p1']} vs {p['p2']} ({q1} → {q2})")
+            q1, q2 = q2, q1
+        elif q2 > 8.0 and e2 > e1:
+            print(f"  🔄 Quote invertite per sanity check Elo: {p['p1']} vs {p['p2']} ({q1} → {q2})")
+            q1, q2 = q2, q1
+
         # Calcola segnale P1
         segnale = genera_segnale(n1, e1, n2, e2, q1)
 
