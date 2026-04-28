@@ -178,6 +178,16 @@ def _parse_nome(nome):
         return '', nome
     return fn, ' '.join(parti[1:])
 
+def _is_te_format(nome):
+    """Rileva formato TennisExplorer: 'Cognome I.' (ultimo token = singola iniziale)."""
+    parti = nome.strip().split()
+    return len(parti) >= 2 and len(parti[-1].rstrip('.')) == 1
+
+def _parse_te(nome):
+    """Parsa 'Cognome I.' → (cognome_norm, iniziale_norm)."""
+    parti = nome.strip().split()
+    return _norm(' '.join(parti[:-1])), _norm(parti[-1].rstrip('.'))
+
 def trova_giocatore_ta(nome, ratings_ta):
     """
     Cerca un giocatore nei rating Tennis Abstract con matching robusto:
@@ -235,6 +245,17 @@ def trova_giocatore_ta(nome, ratings_ta):
                      if _norm(k.split()[-1]) == ultimo_norm]
     if len(candidati_cog) == 1:
         return candidati_cog[0]
+
+    # 6. Formato TennisExplorer inverso: "Jannik Sinner" → cerca "Sinner J."
+    #    Applicato quando le chiavi del dict sono in formato "Cognome I."
+    if fn_in_norm and ln_in_norm:
+        ini_ricerca = fn_in_norm[0]
+        candidati_te = [
+            (k, v) for k, v in ratings_ta.items()
+            if _is_te_format(k) and _parse_te(k) == (ln_in_norm, ini_ricerca)
+        ]
+        if len(candidati_te) == 1:
+            return candidati_te[0]
 
     return None, None
 

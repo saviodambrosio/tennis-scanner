@@ -6,7 +6,8 @@
       "Bash(PYTHONIOENCODING=utf-8 python *)",
       "Bash(python *)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:www.tennisabstract.com)"
+      "WebFetch(domain:www.tennisabstract.com)",
+      "Bash(set PYTHONIOENCODING=utf-8)"
     ]
   }
 }
