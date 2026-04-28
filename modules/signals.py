@@ -26,16 +26,18 @@ def calcola_ev(prob_reale, quota_decimale):
     """
     return (prob_reale * quota_decimale) - 1
 
-def genera_segnale(nome_p1, elo_p1, nome_p2, elo_p2, quota_p1, soglia_ev=0.05):
+def genera_segnale(nome_p1, elo_p1, nome_p2, elo_p2, quota_p1, quota_p2, soglia_ev=0.05):
     """
     Funzione principale: dati due giocatori con i loro Elo
-    e la quota offerta dal bookmaker su P1, restituisce
-    il verdetto completo.
+    e le quote offerte dal bookmaker, restituisce il verdetto completo.
     """
     prob_reale = prob_da_elo(elo_p1, elo_p2)
     prob_implicita_bk = rimuovi_margine_bookmaker(quota_p1)
-    ev = calcola_ev(prob_reale, quota_p1)
+
+    # Quota equa Elo: la quota che azzera l'EV secondo la nostra stima
     quota_equa = round(1 / prob_reale, 2) if prob_reale > 0 else 99
+
+    ev = calcola_ev(prob_reale, quota_p1)
 
     verdetto = "VALUE_BET ✅" if ev >= soglia_ev else "NO VALUE ⏩"
 

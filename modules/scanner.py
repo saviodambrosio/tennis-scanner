@@ -310,7 +310,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn):
             q1, q2 = q2, q1
 
         # Calcola segnale P1
-        segnale = genera_segnale(n1, e1, n2, e2, q1)
+        segnale = genera_segnale(n1, e1, n2, e2, q1, q2)
 
         entry = {
             "p1": p['p1'], "p2": p['p2'],
@@ -328,7 +328,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn):
             value_bets.append(entry)
         else:
             # Controlla anche P2
-            segnale2 = genera_segnale(n2, e2, n1, e1, q2)
+            segnale2 = genera_segnale(n2, e2, n1, e1, q2, q1)
             if segnale2['ev'] >= soglia_ev:
                 value_bets.append({
                     "p1": p['p2'], "p2": p['p1'],
