@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:stats.tennismylife.org)",
+      "Bash(python modules/data_2025.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python *)",
+      "Bash(python *)"
+    ]
+  }
+}
