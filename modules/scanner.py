@@ -214,7 +214,7 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         fill = verde_chiaro if aggiunte % 2 == 0 else bianco
 
         valori = [
-            ora_now.strftime("%Y-%m-%d"),
+            v.get('data_partita', ora_now.strftime("%Y-%m-%d")),
             ora_now.strftime("%H:%M"),
             f"✅ {giocatore}",          # Chi scommettere
             avversario,
@@ -380,6 +380,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             "quota_equa": segnale['quota_equa'],
             "elo_usato": elo_usato,
             "source": p.get('source', ''),
+            "data_partita": p.get("data_partita", ""),
         }
 
         if segnale['ev'] >= soglia_ev:
@@ -398,6 +399,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
                     "quota_equa": segnale2['quota_equa'],
                     "elo_usato": elo_usato,
                     "source": p.get('source', ''),
+                    "data_partita": p.get("data_partita", ""),
                 })
             else:
                 no_value.append(entry)
