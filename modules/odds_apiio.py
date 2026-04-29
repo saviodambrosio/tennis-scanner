@@ -8,7 +8,7 @@ import requests
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 BOOKMAKERS = "Bet365,Betano,Bwin IT,Eurobet IT"
 
@@ -106,50 +106,76 @@ def get_quote_evento(event_id):
 
 def get_partite_con_quote_oggi():
     """
-    Recupera tutte le partite tennis di oggi con le quote ML.
+    Recupera tutte le partite tennis dei prossimi 1-4 giorni (domani fino a oggi+4).
     Restituisce lista di dict pronti per lo scanner.
     """
-    oggi = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    eventi = get_eventi_tennis()
+    ora_utc = datetime.now(timezone.utc)
+
+    def converti_nome(nome_raw):
+        if "," in nome_raw:
+            parti = nome_raw.split(",", 1)
+            return f"{parti[1].strip()} {parti[0].strip()}"
+        return nome_raw.strip()
 
     partite = []
-    for e in eventi:
-        # Filtra solo partite di oggi
-        data_evento = e.get("date", "")[:10]
-        if data_evento != oggi:
+    ids_visti = set()
+
+    for delta in range(1, 5):
+        giorno = ora_utc + timedelta(days=delta)
+        inizio = giorno.replace(hour=0, minute=0, second=0, microsecond=0)
+        fine = giorno.replace(hour=23, minute=59, second=59, microsecond=0)
+
+        params = {
+            "apiKey": ODDS_API_IO_KEY,
+            "sport": "tennis",
+            "status": "pending",
+            "commenceTimeFrom": inizio.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "commenceTimeTo": fine.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+
+        try:
+            resp = requests.get(f"{BASE_URL}/events", params=params, timeout=10)
+            if resp.status_code != 200:
+                print(f"⚠️  odds-api.io giorno+{delta}: {resp.status_code} - {resp.text[:100]}")
+                continue
+            eventi = resp.json()
+        except Exception as e:
+            print(f"❌ odds-api.io errore giorno+{delta}: {e}")
             continue
 
-        # Filtra solo singolari pro (escludi doppi)
-        league = e.get("league", {}).get("name", "")
-        if "Doubles" in league or "doubles" in league:
-            continue
-        if "ITF" in league:
-            continue
+        data_label = inizio.strftime("%Y-%m-%d")
+        trovate_giorno = 0
 
-        home_raw = e.get("home", "")
-        away_raw = e.get("away", "")
+        for e in eventi:
+            event_id = e.get("id")
+            if event_id in ids_visti:
+                continue
 
-        # Converti "Cognome, Nome" -> "Nome Cognome"
-        def converti_nome(nome_raw):
-            if "," in nome_raw:
-                parti = nome_raw.split(",", 1)
-                return f"{parti[1].strip()} {parti[0].strip()}"
-            return nome_raw.strip()
+            league = e.get("league", {}).get("name", "")
+            if "Doubles" in league or "doubles" in league:
+                continue
+            if "ITF" in league:
+                continue
 
-        p1 = converti_nome(home_raw)
-        p2 = converti_nome(away_raw)
-        league_name = league
-        event_id = e.get("id")
+            home_raw = e.get("home", "")
+            away_raw = e.get("away", "")
+            p1 = converti_nome(home_raw)
+            p2 = converti_nome(away_raw)
 
-        if p1 and p2:
-            partite.append({
-                "id": event_id,
-                "p1": p1,
-                "p2": p2,
-                "torneo": league_name,
-                "superficie": "",  # odds-api.io non fornisce superficie
-                "source": "odds-api.io"
-            })
+            if p1 and p2:
+                ids_visti.add(event_id)
+                trovate_giorno += 1
+                partite.append({
+                    "id": event_id,
+                    "p1": p1,
+                    "p2": p2,
+                    "torneo": league,
+                    "superficie": "",
+                    "source": "odds-api.io",
+                    "data_partita": data_label,
+                })
+
+        print(f"  📅 {data_label}: {trovate_giorno} partite trovate")
 
     return partite
 
