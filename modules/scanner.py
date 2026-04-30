@@ -161,7 +161,7 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         for row in ws.iter_rows(min_row=2, values_only=True):
             if row[0] == oggi:
                 # key = (giocatore, avversario)
-                partite_oggi.add((str(row[2]).strip(), str(row[3]).strip()))
+                partite_oggi.add((str(row[0]).strip(), str(row[2]).strip(), str(row[3]).strip()))
 
         prossima_riga = ws.max_row + 1
     else:
@@ -203,13 +203,14 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         avversario = v['p2']
 
         # Controlla duplicato
-        key = (giocatore.strip(), avversario.strip())
-        key_inv = (avversario.strip(), giocatore.strip())
+        data_p = v.get('data_partita', '').strip()
+        key = (data_p, giocatore.strip(), avversario.strip())
+        key_inv = (data_p, avversario.strip(), giocatore.strip())
         if key in partite_oggi or key_inv in partite_oggi:
             saltate += 1
             continue
 
-        partite_oggi.add(key)
+        partite_oggi.add((data_p, giocatore.strip(), avversario.strip()))
         riga = prossima_riga + aggiunte
         fill = verde_chiaro if aggiunte % 2 == 0 else bianco
 
