@@ -688,6 +688,7 @@ def scansiona(soglia_ev=0.05, ev_max=None):
 
     salva_value_bets_excel(value_bets_dedup)
     aggiorna_esiti_excel()
+    return value_bets_dedup
 
 if __name__ == "__main__":
     scansiona(ev_max=EV_MAX)
