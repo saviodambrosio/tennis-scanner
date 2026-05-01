@@ -21,7 +21,7 @@ if hasattr(sys.stderr, 'reconfigure'):
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from modules.elo_tennisabstract import carica_elo_aggiornato, trova_giocatore_ta, verifica_disponibilita
-from modules.odds_apiio import get_partite_con_quote_oggi, get_quote_handicap_evento
+from modules.odds_apiio import get_partite_con_quote_oggi, get_quote_handicap_evento, get_quote_handicap_sets_evento
 from modules.forma_recente import carica_partite_recenti, calcola_forma, aggiusta_elo_per_forma, calcola_h2h, calcola_fatica
 from modules.data_2025 import scarica_e_salva_2026
 from modules.scanner import normalizza_superficie, superficie_da_torneo
@@ -49,6 +49,16 @@ CALIBRAZIONE = [
     (250, 4.2),
 ]
 
+# Calibrazione empirica set: (diff_elo_midpoint, P(favorito vince 2-0))
+CALIBRAZIONE_SETS = [
+    (0,   0.35),
+    (25,  0.35),
+    (75,  0.42),
+    (125, 0.50),
+    (175, 0.58),
+    (250, 0.65),
+]
+
 
 # ---------------------------------------------------------------------------
 # Utility matematiche
@@ -74,6 +84,37 @@ def margine_atteso_da_diff(diff_elo: float) -> float:
             t = (diff_elo - x0) / (x1 - x0)
             return y0 + t * (y1 - y0)
     return CALIBRAZIONE[-1][1]
+
+
+def prob_2_0_da_diff(diff_elo: float) -> float:
+    """Interpolazione: P(favorito Elo vince 2-0 nei set) dato diff Elo."""
+    if diff_elo <= CALIBRAZIONE_SETS[0][0]:
+        return CALIBRAZIONE_SETS[0][1]
+    if diff_elo >= CALIBRAZIONE_SETS[-1][0]:
+        return CALIBRAZIONE_SETS[-1][1]
+    for i in range(len(CALIBRAZIONE_SETS) - 1):
+        x0, y0 = CALIBRAZIONE_SETS[i]
+        x1, y1 = CALIBRAZIONE_SETS[i + 1]
+        if x0 <= diff_elo <= x1:
+            t = (diff_elo - x0) / (x1 - x0)
+            return y0 + t * (y1 - y0)
+    return CALIBRAZIONE_SETS[-1][1]
+
+
+def prob_copre_sets(h: float, is_fav: bool, p2_0_fav: float):
+    """
+    P(cover) per handicap sets ±1.5.
+    h: handicap di questo giocatore (-1.5 o +1.5)
+    is_fav: True se questo giocatore è il favorito Elo
+    p2_0_fav: P(favorito Elo vince 2-0) dalla tabella di calibrazione
+    Restituisce None per linee non standard o combinazioni incoerenti.
+    """
+    if abs(abs(h) - 1.5) > 0.01:
+        return None
+    if h < 0:  # questo giocatore deve vincere 2-0
+        return p2_0_fav if is_fav else None
+    else:  # copre se non perde 0-2 (basta vincere almeno un set)
+        return (1.0 - p2_0_fav) if not is_fav else None
 
 
 def prob_copre(handicap: float, margine_atteso: float, sigma: float = SIGMA) -> float:
@@ -150,47 +191,80 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
         # Dal punto di vista di p1 (home): positivo se p1 è il favorito
         margine_home = margine_fav if e1 >= e2 else -margine_fav
 
-        # Quote handicap
+        # Quote handicap GAMES
         linee = get_quote_handicap_evento(p['id'])
         time.sleep(0.2)
 
         if not linee:
             senza_quote.append(f"{p['p1']} vs {p['p2']}")
-            continue
+        else:
+            for linea in linee:
+                h_home = linea['handicap']
+                q_home = linea['quota_home']
+                q_away = linea['quota_away']
 
-        for linea in linee:
-            h_home = linea['handicap']
-            q_home = linea['quota_home']
-            q_away = linea['quota_away']
+                pc_home = prob_copre(h_home, margine_home)
+                ev_home = pc_home * q_home - 1.0
+                pc_away = prob_copre(-h_home, -margine_home)
+                ev_away = pc_away * q_away - 1.0
 
-            # --- lato home ---
-            pc_home = prob_copre(h_home, margine_home)
-            ev_home = pc_home * q_home - 1.0
+                for player, opp, ev, quota, pc, h in [
+                    (p['p1'], p['p2'], ev_home, q_home, pc_home, h_home),
+                    (p['p2'], p['p1'], ev_away, q_away, pc_away, -h_home),
+                ]:
+                    if ev >= soglia_ev:
+                        value_bets.append({
+                            "p1": player,
+                            "p2": opp,
+                            "torneo": p['torneo'],
+                            "superficie": sup,
+                            "handicap": h,
+                            "quota_handicap": quota,
+                            "prob_stimata": round(pc, 4),
+                            "ev": round(ev, 4),
+                            "elo_diff": round(diff_elo, 0),
+                            "margine_atteso": round(margine_fav, 2),
+                            "elo_usato": elo_usato,
+                            "source": p.get('source', ''),
+                            "data_partita": p.get('data_partita', ''),
+                            "tipo": "Games",
+                        })
 
-            # --- lato away: handicap speculare ---
-            pc_away = prob_copre(-h_home, -margine_home)
-            ev_away = pc_away * q_away - 1.0
+        # Quote handicap SETS
+        linee_sets = get_quote_handicap_sets_evento(p['id'])
+        time.sleep(0.2)
 
-            for player, opp, ev, quota, pc, h in [
-                (p['p1'], p['p2'], ev_home, q_home, pc_home, h_home),
-                (p['p2'], p['p1'], ev_away, q_away, pc_away, -h_home),
-            ]:
-                if ev >= soglia_ev:
-                    value_bets.append({
-                        "p1": player,
-                        "p2": opp,
-                        "torneo": p['torneo'],
-                        "superficie": sup,
-                        "handicap": h,
-                        "quota_handicap": quota,
-                        "prob_stimata": round(pc, 4),
-                        "ev": round(ev, 4),
-                        "elo_diff": round(diff_elo, 0),
-                        "margine_atteso": round(margine_fav, 2),
-                        "elo_usato": elo_usato,
-                        "source": p.get('source', ''),
-                        "data_partita": p.get('data_partita', ''),
-                    })
+        if linee_sets:
+            home_is_fav = (e1 >= e2)
+            p2_0 = prob_2_0_da_diff(diff_elo)
+            for linea in linee_sets:
+                h_home = linea['handicap']
+                q_home = linea['quota_home']
+                q_away = linea['quota_away']
+                for player, opp, pc, quota, h in [
+                    (p['p1'], p['p2'], prob_copre_sets(h_home, home_is_fav, p2_0), q_home, h_home),
+                    (p['p2'], p['p1'], prob_copre_sets(-h_home, not home_is_fav, p2_0), q_away, -h_home),
+                ]:
+                    if pc is None:
+                        continue
+                    ev = pc * quota - 1.0
+                    if ev >= soglia_ev:
+                        value_bets.append({
+                            "p1": player,
+                            "p2": opp,
+                            "torneo": p['torneo'],
+                            "superficie": sup,
+                            "handicap": h,
+                            "quota_handicap": quota,
+                            "prob_stimata": round(pc, 4),
+                            "ev": round(ev, 4),
+                            "elo_diff": round(diff_elo, 0),
+                            "margine_atteso": round(p2_0, 4),
+                            "elo_usato": elo_usato,
+                            "source": p.get('source', ''),
+                            "data_partita": p.get('data_partita', ''),
+                            "tipo": "Sets",
+                        })
 
     return value_bets, senza_quote, non_trovati
 
@@ -236,7 +310,8 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             raw = str(row[2]).strip()
             raw = re.sub(r'^✅\s+', '', raw)              # toglie "✅ "
             raw = re.sub(r'\s+[+-]\d+\.?\d*$', '', raw).strip()  # toglie " +3.5"
-            partite_oggi.add((raw, str(row[3]).strip(), str(row[4])))
+            tipo_val = row[14] if len(row) > 14 and row[14] else 'Games'
+            partite_oggi.add((raw, str(row[3]).strip(), str(row[4]), tipo_val))
         prossima_riga = ws.max_row + 1
     else:
         ws = wb.create_sheet(SHEET_NAME)
@@ -245,7 +320,7 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             "Data", "Ora", "Punta su (handicap)", "Avversario",
             "Handicap", "Quota", "Prob %", "EV %",
             "Torneo", "Superficie", "Elo Diff", "Margine Atteso",
-            "Elo Usato", "Fonte",
+            "Elo Usato", "Fonte", "Tipo",
         ]
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
@@ -260,7 +335,7 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
     aggiunte = saltate = 0
 
     for v in value_bets:
-        key = (v['p1'].strip(), v['p2'].strip(), str(v['handicap']))
+        key = (v['p1'].strip(), v['p2'].strip(), str(v['handicap']), v.get('tipo', 'Games'))
         if key in partite_oggi:
             saltate += 1
             continue
@@ -284,6 +359,7 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             v['margine_atteso'],
             v.get('elo_usato', ''),
             v.get('source', ''),
+            v.get('tipo', 'Games'),
         ]
 
         for col, val in enumerate(valori, 1):
@@ -313,7 +389,7 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         ws.row_dimensions[riga].height = 22
         aggiunte += 1
 
-    larghezze = [12, 8, 32, 22, 10, 8, 8, 8, 30, 10, 10, 14, 20, 14]
+    larghezze = [12, 8, 32, 22, 10, 8, 8, 8, 30, 10, 10, 14, 20, 14, 8]
     for col, width in enumerate(larghezze, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     ws.freeze_panes = "A2"
@@ -431,7 +507,7 @@ def scansiona_handicap(soglia_ev=0.05, ev_max=None):
     seen: set = set()
     dedup = []
     for v in sorted(value_bets, key=lambda x: x['ev'], reverse=True):
-        key = (v['p1'], v['p2'], v['handicap'])
+        key = (v['p1'], v['p2'], v['handicap'], v.get('tipo', 'Games'))
         if key not in seen:
             seen.add(key)
             dedup.append(v)
@@ -450,10 +526,14 @@ def scansiona_handicap(soglia_ev=0.05, ev_max=None):
     if value_bets:
         print("🎯 VALUE BET HANDICAP TROVATE:\n")
         for v in value_bets:
-            print(f"  ✅ {v['p1']} ({v['handicap']:+.1f})  vs  {v['p2']}")
+            tipo = v.get('tipo', 'Games')
+            print(f"  ✅ {v['p1']} ({v['handicap']:+.1f} {tipo.lower()})  vs  {v['p2']}")
             print(f"     Torneo       : {v['torneo']}")
             print(f"     Superficie   : {v['superficie'].upper()} | Elo diff: {int(v['elo_diff'])}")
-            print(f"     Margine fav  : {v['margine_atteso']:+.1f} games  (σ={SIGMA})")
+            if tipo == 'Sets':
+                print(f"     P(2-0 fav)   : {v['margine_atteso']*100:.1f}%")
+            else:
+                print(f"     Margine fav  : {v['margine_atteso']:+.1f} games  (σ={SIGMA})")
             print(f"     Quota        : {v['quota_handicap']} | Prob: {v['prob_stimata']*100:.1f}%")
             print(f"     EV           : {v['ev']*100:.1f}%")
             print()
@@ -487,14 +567,16 @@ if __name__ == "__main__":
 
     if risultati:
         print()
-        print(f"  {'Giocatore (handicap)':<32} {'vs Avversario':<22} {'H':>5}  {'Quota':>6}  {'EV%':>6}  {'Marg':>5}")
-        print(f"  {'-'*32} {'-'*22} {'-'*5}  {'-'*6}  {'-'*6}  {'-'*5}")
+        print(f"  {'Giocatore (handicap)':<36} {'vs Avversario':<22} {'H':>5}  {'Quota':>6}  {'EV%':>6}  {'Marg':>7}")
+        print(f"  {'-'*36} {'-'*22} {'-'*5}  {'-'*6}  {'-'*6}  {'-'*7}")
         for v in risultati:
-            nome_hc = f"{v['p1']} ({v['handicap']:+.1f})"
+            tipo = v.get('tipo', 'Games')
+            nome_hc = f"{v['p1']} ({v['handicap']:+.1f} {tipo.lower()})"
+            marg = f"{v['margine_atteso']*100:.1f}%" if tipo == 'Sets' else f"{v['margine_atteso']:>+4.1f}g"
             print(
-                f"  {nome_hc:<32} {v['p2']:<22} "
+                f"  {nome_hc:<36} {v['p2']:<22} "
                 f"{v['handicap']:>+5.1f}  {v['quota_handicap']:>6.3f}  "
-                f"{v['ev']*100:>5.1f}%  {v['margine_atteso']:>+4.1f}g"
+                f"{v['ev']*100:>5.1f}%  {marg}"
             )
     else:
         print("\n  Nessuna value bet handicap trovata oggi.")

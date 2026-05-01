@@ -275,6 +275,101 @@ def get_quote_handicap_evento(event_id):
         return []
 
 
+def get_quote_handicap_sets_evento(event_id):
+    """
+    Recupera le quote handicap sets per un evento.
+    Mercati cercati: "Spread (Sets)", "Set Handicap", "Sets Handicap",
+                     "Handicap Sets", "Set Spread".
+    Restituisce lista di {handicap: float, quota_home: float, quota_away: float}.
+    """
+    params = {
+        "apiKey": ODDS_API_IO_KEY,
+        "eventId": event_id,
+        "bookmakers": BOOKMAKERS,
+        "market": "spreads",
+    }
+
+    try:
+        resp = requests.get(f"{BASE_URL}/odds", params=params, timeout=10)
+        if resp.status_code != 200:
+            return []
+
+        data = resp.json()
+        bookmakers = data.get("bookmakers", {})
+
+        linee: dict = {}
+
+        NOMI_MERCATO_SETS = {
+            "spread (sets)", "set handicap", "sets handicap",
+            "handicap sets", "set spread",
+        }
+
+        for bk_name, mercati in bookmakers.items():
+            for mercato in mercati:
+                if str(mercato.get("name", "")).lower() not in NOMI_MERCATO_SETS:
+                    continue
+                odds = mercato.get("odds", [])
+                if not odds:
+                    continue
+
+                if isinstance(odds[0], dict) and ("home" in odds[0] or "away" in odds[0]):
+                    for o in odds:
+                        h_val = o.get("hdp", o.get("handicap", o.get("point", o.get("line", o.get("spread")))))
+                        if h_val is None:
+                            continue
+                        try:
+                            h = float(h_val)
+                            qh = float(o.get("home", 0))
+                            qa = float(o.get("away", 0))
+                            if qh > 1.0 and qa > 1.0:
+                                linee.setdefault(h, []).append((qh, qa))
+                        except (TypeError, ValueError):
+                            pass
+                else:
+                    home_odds: dict = {}
+                    away_odds: dict = {}
+                    for o in odds:
+                        side = str(o.get("side", o.get("name", ""))).lower()
+                        h_val = o.get("handicap", o.get("point", o.get("line")))
+                        val = o.get("value", o.get("odds", o.get("price")))
+                        if h_val is None or val is None:
+                            continue
+                        try:
+                            h = float(h_val)
+                            q = float(val)
+                            if q <= 1.0:
+                                continue
+                            if "home" in side or side == "1":
+                                home_odds[h] = q
+                            elif "away" in side or side == "2":
+                                away_odds[h] = q
+                        except (TypeError, ValueError):
+                            pass
+                    for h, qh in home_odds.items():
+                        qa = away_odds.get(-h)
+                        if qa:
+                            linee.setdefault(h, []).append((qh, qa))
+
+        if not linee:
+            return []
+
+        result = []
+        for h, pairs in linee.items():
+            q_home = max(qh for qh, _ in pairs)
+            q_away = max(qa for _, qa in pairs)
+            result.append({
+                "handicap": h,
+                "quota_home": round(q_home, 3),
+                "quota_away": round(q_away, 3),
+            })
+
+        return sorted(result, key=lambda x: x["handicap"])
+
+    except Exception as e:
+        print(f"❌ odds-api.io handicap sets errore: {e}")
+        return []
+
+
 if __name__ == "__main__":
     print("🔍 Test odds-api.io...")
     print(f"\n📅 Partite di oggi con quote:")
