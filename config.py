@@ -13,7 +13,7 @@ BETFAIR_PASSWORD = "Patong2013%"     # Password account Betfair amico
 ODDS_API_IO_KEY = "97d4118388bad3aca1519306bcadbdf54fa4084eaacf97699c667b6e9986ed4a"
 
 # --- SOGLIE ALGORITMO ---
-EV_MINIMO = 0.05          # Vantaggio minimo richiesto (5%)
+EV_MINIMO = 0.09         # Vantaggio minimo richiesto (5%)
 EV_MAX = None             # Soglia massima EV (es. 0.60 esclude EV > 60%); None = nessun filtro
 ODDS_MIN = 1.40           # Quota minima accettata (filtra le certezze)
 ODDS_MAX = 6.00           # Quota massima accettata (filtra i longshot)
@@ -31,9 +31,16 @@ TOUR_ACCETTATI = [        # Tornei che vogliamo analizzare
 PRO_BETS_FILE = "data/pro_bets.csv"
 MATCH_RATE_TARGET = 0.80  # Soglia minima di coincidenza con i Pro (80%)
 
-# --- NOTIFICHE (da configurare nella fase live) ---
-TELEGRAM_BOT_TOKEN = ""
-TELEGRAM_CHAT_ID = ""
+# --- NOTIFICHE TELEGRAM ---
+TELEGRAM_BOT_TOKEN = ""      # legacy alias (non usato dai nuovi moduli)
+TELEGRAM_TOKEN = ""           # token del bot (da inserire per attivare)
+TELEGRAM_CHAT_ID = ""         # chat_id destinatario
+TELEGRAM_ABILITATO = False    # interruttore master: True = invia, False = solo console
+
+# --- SCHEDULER ---
+SCHEDULER_ORA_MATTINA = "08:30"   # orario scansione mattutina
+SCHEDULER_ORA_SERA    = "21:00"   # orario scansione serale
+SCHEDULER_ABILITATO   = False     # interruttore master: True = attiva loop scheduler
 
 # --- DATI STORICI GRATUITI (Jeff Sackmann GitHub) ---
 # Questi vengono scaricati automaticamente da data_loader.py

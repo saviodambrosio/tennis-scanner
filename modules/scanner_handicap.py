@@ -310,17 +310,17 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             raw = str(row[2]).strip()
             raw = re.sub(r'^✅\s+', '', raw)              # toglie "✅ "
             raw = re.sub(r'\s+[+-]\d+\.?\d*$', '', raw).strip()  # toglie " +3.5"
-            tipo_val = row[14] if len(row) > 14 and row[14] else 'Games'
-            partite_oggi.add((raw, str(row[3]).strip(), str(row[4]), tipo_val))
+            tipo_val = row[4] if len(row) > 4 and row[4] else 'Games'
+            partite_oggi.add((raw, str(row[3]).strip(), str(row[5]), tipo_val))
         prossima_riga = ws.max_row + 1
     else:
         ws = wb.create_sheet(SHEET_NAME)
         partite_oggi = set()
         headers = [
             "Data", "Ora", "Punta su (handicap)", "Avversario",
-            "Handicap", "Quota", "Prob %", "EV %",
+            "Tipo", "Handicap", "Quota", "Quota di chiusura", "Prob %", "EV %",
             "Torneo", "Superficie", "Elo Diff", "Margine Atteso",
-            "Elo Usato", "Fonte", "Tipo",
+            "Elo Usato", "Fonte",
         ]
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
@@ -349,8 +349,10 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             ora_now.strftime("%H:%M"),
             f"✅ {v['p1']}  {v['handicap']:+.1f}",
             v['p2'],
+            v.get('tipo', 'Games'),
             v['handicap'],
             v['quota_handicap'],
+            '',
             round(v['prob_stimata'] * 100, 1),
             round(v['ev'] * 100, 1),
             v['torneo'],
@@ -359,7 +361,6 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             v['margine_atteso'],
             v.get('elo_usato', ''),
             v.get('source', ''),
-            v.get('tipo', 'Games'),
         ]
 
         for col, val in enumerate(valori, 1):
@@ -370,10 +371,10 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
                 cell.fill = azzurro
                 cell.font = Font(bold=True, size=11)
                 cell.alignment = Alignment(horizontal="left", vertical="center")
-            elif col == 6:
+            elif col == 7:
                 cell.fill = fill
                 cell.font = Font(bold=True, size=12)
-            elif col == 8 and isinstance(val, (int, float)):
+            elif col == 10 and isinstance(val, (int, float)):
                 if val >= 30:
                     cell.fill = PatternFill("solid", fgColor="FF0000")
                     cell.font = Font(bold=True, color="FFFFFF")
@@ -389,7 +390,7 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         ws.row_dimensions[riga].height = 22
         aggiunte += 1
 
-    larghezze = [12, 8, 32, 22, 10, 8, 8, 8, 30, 10, 10, 14, 20, 14, 8]
+    larghezze = [12, 8, 32, 22, 8, 10, 8, 18, 8, 8, 30, 10, 10, 14, 20, 14]
     for col, width in enumerate(larghezze, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
     ws.freeze_panes = "A2"
