@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import EV_MAX
 from modules.scanner import scansiona
 from modules.scanner_handicap import scansiona_handicap
+from modules.notifiche_telegram import invia_report_giornaliero
 
 SEP = "=" * 65
 
@@ -40,6 +41,8 @@ def main():
     print(f"  Value bet Handicap trovate : {len(vb_hdp)}")
     print(f"  Risultati salvati in data/value_bets_log.xlsx")
     print(SEP)
+
+    invia_report_giornaliero(vb_ml, vb_hdp)
 
 if __name__ == "__main__":
     main()

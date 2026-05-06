@@ -287,8 +287,6 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         top=Side(style='thin'), bottom=Side(style='thin'),
     )
 
-    oggi = datetime.now().strftime("%Y-%m-%d")
-
     if os.path.exists(filepath):
         wb = load_workbook(filepath)
     else:
@@ -297,25 +295,39 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
 
     if SHEET_NAME in wb.sheetnames:
         ws = wb[SHEET_NAME]
-        partite_oggi = set()
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if not row[0]:
+        # Raccogli TUTTE le partite presenti (indipendentemente dalla data)
+        # e rimuovi eventuali duplicati già nell'Excel
+        partite_esistenti = set()
+        righe_duplicate = []
+        for row_idx in range(2, ws.max_row + 1):
+            data_val = ws.cell(row_idx, 1).value
+            if not data_val:
                 continue
-            # Gestisce sia date come stringa che come oggetto datetime
-            data_val = row[0]
             data_str = data_val.strftime("%Y-%m-%d") if hasattr(data_val, 'strftime') else str(data_val).strip()
-            if data_str != oggi:
-                continue
-            # Col 3 contiene "✅ PlayerName  +H" — estrae solo il nome
-            raw = str(row[2]).strip()
-            raw = re.sub(r'^✅\s+', '', raw)              # toglie "✅ "
-            raw = re.sub(r'\s+[+-]\d+\.?\d*$', '', raw).strip()  # toglie " +3.5"
-            tipo_val = row[4] if len(row) > 4 and row[4] else 'Games'
-            partite_oggi.add((raw, str(row[3]).strip(), str(row[5]), tipo_val))
+            p1_raw = str(ws.cell(row_idx, 3).value or '')
+            p1_raw = re.sub(r'^✅\s+', '', p1_raw)
+            p1_raw = re.sub(r'\s+[+-]\d+\.?\d*$', '', p1_raw).strip()
+            p2_raw   = str(ws.cell(row_idx, 4).value or '').strip()
+            try:
+                h_raw = f"{float(ws.cell(row_idx, 6).value):.1f}"
+            except (TypeError, ValueError):
+                h_raw = str(ws.cell(row_idx, 6).value or '').strip()
+            tipo_val = ws.cell(row_idx, 5).value or 'Games'
+            key = (data_str, p1_raw, p2_raw, h_raw, tipo_val)
+            if key in partite_esistenti:
+                righe_duplicate.append(row_idx)
+            else:
+                partite_esistenti.add(key)
+
+        for row_idx in reversed(righe_duplicate):
+            ws.delete_rows(row_idx)
+        if righe_duplicate:
+            print(f"  🧹 {len(righe_duplicate)} righe duplicate rimosse dall'Excel")
+
         prossima_riga = ws.max_row + 1
     else:
         ws = wb.create_sheet(SHEET_NAME)
-        partite_oggi = set()
+        partite_esistenti = set()
         headers = [
             "Data", "Ora", "Punta su (handicap)", "Avversario",
             "Tipo", "Handicap", "Quota", "Quota di chiusura", "Prob %", "EV %",
@@ -335,11 +347,12 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
     aggiunte = saltate = 0
 
     for v in value_bets:
-        key = (v['p1'].strip(), v['p2'].strip(), str(v['handicap']), v.get('tipo', 'Games'))
-        if key in partite_oggi:
+        data_p = v.get('data_partita', '').strip()
+        key = (data_p, v['p1'].strip(), v['p2'].strip(), f"{float(v['handicap']):.1f}", v.get('tipo', 'Games'))
+        if key in partite_esistenti:
             saltate += 1
             continue
-        partite_oggi.add(key)
+        partite_esistenti.add(key)
 
         riga = prossima_riga + aggiunte
         fill = blu_chiaro if aggiunte % 2 == 0 else bianco

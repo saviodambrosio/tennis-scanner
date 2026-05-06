@@ -33,9 +33,9 @@ MATCH_RATE_TARGET = 0.80  # Soglia minima di coincidenza con i Pro (80%)
 
 # --- NOTIFICHE TELEGRAM ---
 TELEGRAM_BOT_TOKEN = ""      # legacy alias (non usato dai nuovi moduli)
-TELEGRAM_TOKEN = ""           # token del bot (da inserire per attivare)
-TELEGRAM_CHAT_ID = ""         # chat_id destinatario
-TELEGRAM_ABILITATO = False    # interruttore master: True = invia, False = solo console
+TELEGRAM_TOKEN = "8711682098:AAGlH3f9IBjjduy2Nt5NvUWyWM6IZ9xoI4s"           # token del bot (da inserire per attivare)
+TELEGRAM_CHAT_ID = "483228005"         # chat_id destinatario
+TELEGRAM_ABILITATO = True    # interruttore master: True = invia, False = solo console
 
 # --- SCHEDULER ---
 SCHEDULER_ORA_MATTINA = "08:30"   # orario scansione mattutina

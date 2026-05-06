@@ -150,25 +150,41 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         top=Side(style='thin'), bottom=Side(style='thin')
     )
 
-    oggi = datetime.now().strftime("%Y-%m-%d")
-
     if os.path.exists(filepath):
         wb = load_workbook(filepath)
         ws = wb.active
 
-        # Raccogli partite già presenti oggi per evitare duplicati
-        partite_oggi = set()
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if row[0] == oggi:
-                # key = (giocatore, avversario)
-                partite_oggi.add((str(row[0]).strip(), str(row[2]).strip(), str(row[3]).strip()))
+        # Raccogli TUTTE le partite presenti (indipendentemente dalla data)
+        # e rimuovi eventuali duplicati già nell'Excel
+        partite_esistenti = set()
+        righe_duplicate = []
+        for row_idx in range(2, ws.max_row + 1):
+            data_val = ws.cell(row_idx, 1).value
+            p1_val   = ws.cell(row_idx, 3).value
+            p2_val   = ws.cell(row_idx, 4).value
+            if not data_val:
+                continue
+            data_str = data_val.strftime("%Y-%m-%d") if hasattr(data_val, 'strftime') else str(data_val).strip()
+            raw_p1 = str(p1_val).replace('✅ ', '').strip() if p1_val else ''
+            raw_p2 = str(p2_val).strip() if p2_val else ''
+            key     = (data_str, raw_p1, raw_p2)
+            key_inv = (data_str, raw_p2, raw_p1)
+            if key in partite_esistenti or key_inv in partite_esistenti:
+                righe_duplicate.append(row_idx)
+            else:
+                partite_esistenti.add(key)
+
+        for row_idx in reversed(righe_duplicate):
+            ws.delete_rows(row_idx)
+        if righe_duplicate:
+            print(f"  🧹 {len(righe_duplicate)} righe duplicate rimosse dall'Excel")
 
         prossima_riga = ws.max_row + 1
     else:
         wb = Workbook()
         ws = wb.active
         ws.title = "Value Bets Log"
-        partite_oggi = set()
+        partite_esistenti = set()
 
         headers = [
             "Data", "Ora", "🎯 PUNTA SU", "Avversario",
@@ -202,15 +218,15 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         giocatore = v['p1']
         avversario = v['p2']
 
-        # Controlla duplicato
+        # Controlla duplicato su tutta la storia (non solo oggi)
         data_p = v.get('data_partita', '').strip()
         key = (data_p, giocatore.strip(), avversario.strip())
         key_inv = (data_p, avversario.strip(), giocatore.strip())
-        if key in partite_oggi or key_inv in partite_oggi:
+        if key in partite_esistenti or key_inv in partite_esistenti:
             saltate += 1
             continue
 
-        partite_oggi.add((data_p, giocatore.strip(), avversario.strip()))
+        partite_esistenti.add((data_p, giocatore.strip(), avversario.strip()))
         riga = prossima_riga + aggiunte
         fill = verde_chiaro if aggiunte % 2 == 0 else bianco
 
