@@ -30,10 +30,11 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 try:
-    from config import ODDS_API_IO_KEY, EV_MAX
+    from config import ODDS_API_IO_KEY, EV_MAX, EV_MINIMO
 except Exception:
     ODDS_API_IO_KEY = ""
     EV_MAX = None
+    EV_MINIMO = 0.09
 
 SIGMA = 4.8  # deviazione standard calibrata su 2500 partite ATP 2025
 
@@ -170,14 +171,14 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
             e2 = aggiusta_elo_per_forma(e2, forma2)
             elo_usato = f"TA-{sup}+forma"
 
-        # H2H
+        # H2H — aggiusta Elo di max ±50 punti (ridotto da 75; pochi dati su Challenger)
         h2h = calcola_h2h(n1, n2, partite_recenti)
-        e1 += h2h * 75
-        e2 -= h2h * 75
+        e1 += h2h * 50
+        e2 -= h2h * 50
         if h2h != 0:
             elo_usato += f"+h2h({h2h:+.2f})"
 
-        # Fatica
+        # Fatica: max -100 punti Elo; si attiva con 2+ partite negli ultimi 2 giorni
         if partite_recenti:
             fatica1 = calcola_fatica(n1_fr if n1_fr else n1, partite_recenti)
             fatica2 = calcola_fatica(n2_fr if n2_fr else n2, partite_recenti)
@@ -416,7 +417,7 @@ def salva_handicap_excel(value_bets, filepath="data/value_bets_log.xlsx"):
 # Entry point principale
 # ---------------------------------------------------------------------------
 
-def scansiona_handicap(soglia_ev=0.05, ev_max=None):
+def scansiona_handicap(soglia_ev=EV_MINIMO, ev_max=None):
     print(f"{'='*65}")
     print(f"  🎯 SCANNER HANDICAP - {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     print(f"{'='*65}\n")

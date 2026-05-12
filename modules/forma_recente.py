@@ -141,19 +141,19 @@ def calcola_forma(nome, partite_recenti, superficie=None, n_partite=10):
 
 
 def aggiusta_elo_per_forma(elo_base, forma_score):
-    return round(elo_base + (forma_score * 150), 1)
+    # Forma recente: max ±100 punti Elo (ridotto da 150; era troppo aggressivo)
+    return round(elo_base + (forma_score * 100), 1)
 
 
-def calcola_fatica(nome, partite_recenti_dict, giorni=3):
+def calcola_fatica(nome, partite_recenti_dict, giorni=2):
+    # Si attiva solo con 2+ partite negli ultimi 2 giorni (finestra ridotta da 3g)
     if not nome or not partite_recenti_dict:
         return 0.0
     cutoff = pd.Timestamp.now() - pd.Timedelta(days=giorni)
     partite = [p for p in partite_recenti_dict.get(nome, []) if p['data'] >= cutoff]
     n = len(partite)
-    if n == 0:
+    if n < 2:
         return 0.0
-    elif n == 1:
-        return -0.3
     elif n == 2:
         return -0.6
     else:

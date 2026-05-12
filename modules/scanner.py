@@ -19,10 +19,11 @@ SOFASCORE_URL = "https://api.sofascore.com/api/v1/sport/tennis/scheduled-events/
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 try:
-    from config import ODDS_API_IO_KEY, EV_MAX
+    from config import ODDS_API_IO_KEY, EV_MAX, EV_MINIMO
 except:
     ODDS_API_IO_KEY = ""
     EV_MAX = None
+    EV_MINIMO = 0.09
 
 SUPERFICIE_MAP = {
     'clay': 'clay', 'red clay': 'clay', 'clay (red)': 'clay',
@@ -345,16 +346,16 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             elo_usato = f"TA-{sup}+forma"
 
         h2h = calcola_h2h(n1, n2, partite_recenti)
-        # H2H aggiusta Elo di max ±75 punti
-        e1 = e1 + (h2h * 75)
-        e2 = e2 - (h2h * 75)
+        # H2H aggiusta Elo di max ±50 punti (ridotto da 75; pochi dati storici su Challenger)
+        e1 = e1 + (h2h * 50)
+        e2 = e2 - (h2h * 50)
         if h2h != 0:
             elo_usato += f"+h2h({h2h:+.2f})"
 
         if partite_recenti:
             fatica1 = calcola_fatica(n1_fr if n1_fr else n1, partite_recenti)
             fatica2 = calcola_fatica(n2_fr if n2_fr else n2, partite_recenti)
-            # Fatica aggiusta Elo di max -100 punti (solo negativo)
+            # Fatica aggiusta Elo di max -100 punti; si attiva con 2+ partite negli ultimi 2 giorni
             e1 = e1 + (fatica1 * 100)
             e2 = e2 + (fatica2 * 100)
             if fatica1 != 0 or fatica2 != 0:
@@ -511,7 +512,7 @@ def aggiorna_esiti_excel(
     print(f"\n📊 Esiti aggiornati: {aggiornati} ({n_w} W, {n_l} L) → {xlsx_path}")
 
 
-def scansiona(soglia_ev=0.05, ev_max=None):
+def scansiona(soglia_ev=EV_MINIMO, ev_max=None):
     print(f"{'='*65}")
     print(f"  🎾 TENNIS SCANNER - {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     print(f"{'='*65}\n")

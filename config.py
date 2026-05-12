@@ -13,7 +13,7 @@ BETFAIR_PASSWORD = "Patong2013%"     # Password account Betfair amico
 ODDS_API_IO_KEY = "97d4118388bad3aca1519306bcadbdf54fa4084eaacf97699c667b6e9986ed4a"
 
 # --- SOGLIE ALGORITMO ---
-EV_MINIMO = 0.09         # Vantaggio minimo richiesto (5%)
+EV_MINIMO = 0.09         # Vantaggio minimo richiesto (9%)
 EV_MAX = None             # Soglia massima EV (es. 0.60 esclude EV > 60%); None = nessun filtro
 ODDS_MIN = 1.40           # Quota minima accettata (filtra le certezze)
 ODDS_MAX = 6.00           # Quota massima accettata (filtra i longshot)
@@ -34,7 +34,7 @@ MATCH_RATE_TARGET = 0.80  # Soglia minima di coincidenza con i Pro (80%)
 # --- NOTIFICHE TELEGRAM ---
 TELEGRAM_BOT_TOKEN = ""      # legacy alias (non usato dai nuovi moduli)
 TELEGRAM_TOKEN = "8711682098:AAGlH3f9IBjjduy2Nt5NvUWyWM6IZ9xoI4s"           # token del bot (da inserire per attivare)
-TELEGRAM_CHAT_ID = "483228005"         # chat_id destinatario
+TELEGRAM_CHAT_ID = "-5266241019"         # chat_id destinatario
 TELEGRAM_ABILITATO = True    # interruttore master: True = invia, False = solo console
 
 # --- SCHEDULER ---
