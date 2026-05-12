@@ -17,6 +17,8 @@ EV_MINIMO = 0.09         # Vantaggio minimo richiesto (9%)
 EV_MAX = None             # Soglia massima EV (es. 0.60 esclude EV > 60%); None = nessun filtro
 ODDS_MIN = 1.40           # Quota minima accettata (filtra le certezze)
 ODDS_MAX = 6.00           # Quota massima accettata (filtra i longshot)
+ODDS_MIN_VALUE = 1.80     # Quota minima per value bet (filtro Pro)
+ODDS_MAX_VALUE = 4.00     # Quota massima per value bet (filtro Pro)
 
 # --- FILTRI MATCH ---
 SOLO_SINGOLARI = True     # Se True, esclude doppi dal live scanner

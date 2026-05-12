@@ -2,6 +2,8 @@ import requests
 import sys
 import os
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from datetime import datetime
 from modules.elo_tennisabstract import (
@@ -19,11 +21,13 @@ SOFASCORE_URL = "https://api.sofascore.com/api/v1/sport/tennis/scheduled-events/
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 try:
-    from config import ODDS_API_IO_KEY, EV_MAX, EV_MINIMO
+    from config import ODDS_API_IO_KEY, EV_MAX, EV_MINIMO, ODDS_MIN_VALUE, ODDS_MAX_VALUE
 except:
     ODDS_API_IO_KEY = ""
     EV_MAX = None
     EV_MINIMO = 0.09
+    ODDS_MIN_VALUE = 1.80
+    ODDS_MAX_VALUE = 4.00
 
 SUPERFICIE_MAP = {
     'clay': 'clay', 'red clay': 'clay', 'clay (red)': 'clay',
@@ -312,14 +316,32 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
     non_trovati = []
     senza_quote = []
 
+    # ── Rate limiter: max 10 richieste al secondo ──────────────────────
+    _rl_lock = threading.Lock()
+    _rl_slots = []
+
+    def _rate_limit():
+        with _rl_lock:
+            while True:
+                now = time.time()
+                _rl_slots[:] = [t for t in _rl_slots if now - t < 1.0]
+                if len(_rl_slots) < 10:
+                    break
+                time.sleep(1.0 - (now - _rl_slots[0]) + 0.001)
+            _rl_slots.append(time.time())
+
+    def _throttled_quote(event_id):
+        _rate_limit()
+        return get_quote_fn(event_id)
+
+    # ── FASE 1: calcolo Elo per tutte le partite (sequenziale, in-memory) ──
+    partite_valide = []
     for p in partite:
-        # Determina superficie
         sup_raw = p.get('superficie', '')
         sup = normalizza_superficie(sup_raw)
         if sup == 'hard' and not sup_raw:
             sup = superficie_da_torneo(p.get('torneo', ''))
 
-        # Cerca giocatori in Tennis Abstract
         n1, r1 = trova_giocatore_ta(p['p1'], ratings_ta)
         n2, r2 = trova_giocatore_ta(p['p2'], ratings_ta)
 
@@ -328,12 +350,10 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             non_trovati.append(f"{p['p1']} vs {p['p2']} (manca: {mancante})")
             continue
 
-        # Elo specifico per superficie
         e1 = r1.get(sup, r1['elo'])
         e2 = r2.get(sup, r2['elo'])
         elo_usato = f"TA-{sup}"
 
-        # Aggiustamento per forma recente
         n1_fr = None
         n2_fr = None
         if partite_recenti and nomi_recenti_dict:
@@ -361,9 +381,34 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             if fatica1 != 0 or fatica2 != 0:
                 elo_usato += f"+fat({fatica1:.1f}/{fatica2:.1f})"
 
-        # Quote
-        q1, q2 = get_quote_fn(p['id'])
-        time.sleep(0.2)
+        partite_valide.append({
+            'p': p, 'n1': n1, 'n2': n2,
+            'e1': e1, 'e2': e2,
+            'sup': sup, 'elo_usato': elo_usato,
+        })
+
+    # ── FASE 2: fetch quote in parallelo (max 10 worker, rate-limited) ──
+    quote_cache = {}
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {
+            executor.submit(_throttled_quote, item['p']['id']): item['p']['id']
+            for item in partite_valide
+        }
+        for future in as_completed(futures):
+            eid = futures[future]
+            try:
+                quote_cache[eid] = future.result()
+            except Exception:
+                quote_cache[eid] = (None, None)
+
+    # ── FASE 3: segnali, filtri range Pro, value bet ──────────────────
+    for item in partite_valide:
+        p = item['p']
+        n1, n2 = item['n1'], item['n2']
+        e1, e2 = item['e1'], item['e2']
+        sup, elo_usato = item['sup'], item['elo_usato']
+
+        q1, q2 = quote_cache.get(p['id'], (None, None))
 
         if not q1 or not q2:
             senza_quote.append(f"{p['p1']} vs {p['p2']}")
@@ -385,26 +430,38 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             print(f"  🔄 Quote invertite per sanity check Elo: {p['p1']} vs {p['p2']} ({q1} → {q2})")
             q1, q2 = q2, q1
 
-        # Calcola segnale P1
-        segnale = genera_segnale(n1, e1, n2, e2, q1, q2)
+        # Filtro range Pro: scarta se entrambe le quote sono fuori range
+        q1_ok = ODDS_MIN_VALUE <= q1 <= ODDS_MAX_VALUE
+        q2_ok = ODDS_MIN_VALUE <= q2 <= ODDS_MAX_VALUE
 
-        entry = {
-            "p1": p['p1'], "p2": p['p2'],
-            "torneo": p['torneo'],
-            "superficie": sup,
-            "quota_p1": q1, "quota_p2": q2,
-            "prob_reale": segnale['prob_reale'],
-            "ev": segnale['ev'],
-            "quota_equa": segnale['quota_equa'],
-            "elo_usato": elo_usato,
-            "source": p.get('source', ''),
-            "data_partita": p.get("data_partita", ""),
-        }
+        if not q1_ok and not q2_ok:
+            senza_quote.append(f"{p['p1']} vs {p['p2']} (quota fuori range Pro)")
+            continue
 
-        if segnale['ev'] >= soglia_ev:
-            value_bets.append(entry)
-        else:
-            # Controlla anche P2
+        trovata = False
+        entry = None
+
+        # Calcola segnale P1 solo se q1 in range
+        if q1_ok:
+            segnale = genera_segnale(n1, e1, n2, e2, q1, q2)
+            entry = {
+                "p1": p['p1'], "p2": p['p2'],
+                "torneo": p['torneo'],
+                "superficie": sup,
+                "quota_p1": q1, "quota_p2": q2,
+                "prob_reale": segnale['prob_reale'],
+                "ev": segnale['ev'],
+                "quota_equa": segnale['quota_equa'],
+                "elo_usato": elo_usato,
+                "source": p.get('source', ''),
+                "data_partita": p.get("data_partita", ""),
+            }
+            if segnale['ev'] >= soglia_ev:
+                value_bets.append(entry)
+                trovata = True
+
+        # Controlla P2 se P1 non è value (o q1 fuori range) e q2 in range
+        if not trovata and q2_ok:
             segnale2 = genera_segnale(n2, e2, n1, e1, q2, q1)
             if segnale2['ev'] >= soglia_ev:
                 value_bets.append({
@@ -419,8 +476,10 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
                     "source": p.get('source', ''),
                     "data_partita": p.get("data_partita", ""),
                 })
-            else:
+            elif entry is not None:
                 no_value.append(entry)
+        elif not trovata and entry is not None:
+            no_value.append(entry)
 
     return value_bets, no_value, non_trovati, senza_quote
 

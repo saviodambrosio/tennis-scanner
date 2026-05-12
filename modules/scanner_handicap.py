@@ -8,7 +8,9 @@ import os
 import re
 import sys
 import time
+import threading
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from math import erf, sqrt
 from datetime import datetime
 
@@ -30,11 +32,13 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 try:
-    from config import ODDS_API_IO_KEY, EV_MAX, EV_MINIMO
+    from config import ODDS_API_IO_KEY, EV_MAX, EV_MINIMO, ODDS_MIN_VALUE, ODDS_MAX_VALUE
 except Exception:
     ODDS_API_IO_KEY = ""
     EV_MAX = None
     EV_MINIMO = 0.09
+    ODDS_MIN_VALUE = 1.80
+    ODDS_MAX_VALUE = 4.00
 
 SIGMA = 4.8  # deviazione standard calibrata su 2500 partite ATP 2025
 
@@ -141,14 +145,35 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
     senza_quote = []
     non_trovati = []
 
+    # ── Rate limiter: max 10 richieste al secondo ──────────────────────
+    _rl_lock = threading.Lock()
+    _rl_slots = []
+
+    def _rate_limit():
+        with _rl_lock:
+            while True:
+                now = time.time()
+                _rl_slots[:] = [t for t in _rl_slots if now - t < 1.0]
+                if len(_rl_slots) < 10:
+                    break
+                time.sleep(1.0 - (now - _rl_slots[0]) + 0.001)
+            _rl_slots.append(time.time())
+
+    def _fetch_quotes(event_id):
+        _rate_limit()
+        linee = get_quote_handicap_evento(event_id)
+        _rate_limit()
+        linee_sets = get_quote_handicap_sets_evento(event_id)
+        return linee, linee_sets
+
+    # ── FASE 1: calcolo Elo (sequenziale, in-memory) ───────────────────
+    partite_valide = []
     for p in partite:
-        # Superficie
         sup_raw = p.get('superficie', '')
         sup = normalizza_superficie(sup_raw)
         if sup == 'hard' and not sup_raw:
             sup = superficie_da_torneo(p.get('torneo', ''))
 
-        # Lookup Elo
         n1, r1 = trova_giocatore_ta(p['p1'], ratings_ta)
         n2, r2 = trova_giocatore_ta(p['p2'], ratings_ta)
         if not r1 or not r2:
@@ -160,7 +185,6 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
         e2 = r2.get(sup, r2['elo'])
         elo_usato = f"TA-{sup}"
 
-        # Forma recente
         n1_fr = n2_fr = None
         if partite_recenti and nomi_recenti_dict:
             n1_fr, _ = trova_giocatore_ta(n1, nomi_recenti_dict)
@@ -189,12 +213,38 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
 
         diff_elo = abs(e1 - e2)
         margine_fav = margine_atteso_da_diff(diff_elo)
-        # Dal punto di vista di p1 (home): positivo se p1 è il favorito
         margine_home = margine_fav if e1 >= e2 else -margine_fav
 
-        # Quote handicap GAMES
-        linee = get_quote_handicap_evento(p['id'])
-        time.sleep(0.2)
+        partite_valide.append({
+            'p': p, 'e1': e1, 'e2': e2,
+            'sup': sup, 'elo_usato': elo_usato,
+            'diff_elo': diff_elo, 'margine_fav': margine_fav, 'margine_home': margine_home,
+        })
+
+    # ── FASE 2: fetch quote in parallelo (2 call/partita, rate-limited) ──
+    quote_cache = {}
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {
+            executor.submit(_fetch_quotes, item['p']['id']): item['p']['id']
+            for item in partite_valide
+        }
+        for future in as_completed(futures):
+            eid = futures[future]
+            try:
+                quote_cache[eid] = future.result()
+            except Exception:
+                quote_cache[eid] = (None, None)
+
+    # ── FASE 3: segnali, filtro range Pro, value bet ───────────────────
+    for item in partite_valide:
+        p = item['p']
+        e1, e2 = item['e1'], item['e2']
+        sup, elo_usato = item['sup'], item['elo_usato']
+        diff_elo, margine_fav, margine_home = (
+            item['diff_elo'], item['margine_fav'], item['margine_home']
+        )
+
+        linee, linee_sets = quote_cache.get(p['id'], (None, None))
 
         if not linee:
             senza_quote.append(f"{p['p1']} vs {p['p2']}")
@@ -213,7 +263,7 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
                     (p['p1'], p['p2'], ev_home, q_home, pc_home, h_home),
                     (p['p2'], p['p1'], ev_away, q_away, pc_away, -h_home),
                 ]:
-                    if ev >= soglia_ev:
+                    if ev >= soglia_ev and ODDS_MIN_VALUE <= quota <= ODDS_MAX_VALUE:
                         value_bets.append({
                             "p1": player,
                             "p2": opp,
@@ -231,10 +281,6 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
                             "tipo": "Games",
                         })
 
-        # Quote handicap SETS
-        linee_sets = get_quote_handicap_sets_evento(p['id'])
-        time.sleep(0.2)
-
         if linee_sets:
             home_is_fav = (e1 >= e2)
             p2_0 = prob_2_0_da_diff(diff_elo)
@@ -249,7 +295,7 @@ def analizza_handicap(partite, ratings_ta, soglia_ev,
                     if pc is None:
                         continue
                     ev = pc * quota - 1.0
-                    if ev >= soglia_ev:
+                    if ev >= soglia_ev and ODDS_MIN_VALUE <= quota <= ODDS_MAX_VALUE:
                         value_bets.append({
                             "p1": player,
                             "p2": opp,
