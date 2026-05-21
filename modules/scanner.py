@@ -21,13 +21,24 @@ SOFASCORE_URL = "https://api.sofascore.com/api/v1/sport/tennis/scheduled-events/
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 try:
-    from config import ODDS_API_IO_KEY, EV_MAX, EV_MINIMO, ODDS_MIN_VALUE, ODDS_MAX_VALUE
-except:
+    from config import (ODDS_API_IO_KEY, EV_MAX, EV_MINIMO, ODDS_MIN_VALUE, ODDS_MAX_VALUE,
+                        MODELLO, MARKOV_CPI_ABILITATO, MARKOV_FATICA_ESTESA,
+                        MARKOV_TIMEZONE_ABILITATO, MARKOV_ETA_SUPERFICIE, MARKOV_CPI)
+except Exception:
     ODDS_API_IO_KEY = ""
     EV_MAX = None
     EV_MINIMO = 0.09
     ODDS_MIN_VALUE = 1.80
     ODDS_MAX_VALUE = 4.00
+    MODELLO = "elo"
+    MARKOV_CPI_ABILITATO = False
+    MARKOV_FATICA_ESTESA = True
+    MARKOV_TIMEZONE_ABILITATO = False
+    MARKOV_ETA_SUPERFICIE = True
+    MARKOV_CPI = {'hard': 0.0, 'clay': 0.0, 'grass': 0.0}
+
+if MODELLO == "markov":
+    from modules.markov import calcola_probabilita_markov, calcola_fatica_markov
 
 SUPERFICIE_MAP = {
     'clay': 'clay', 'red clay': 'clay', 'clay (red)': 'clay',
@@ -385,6 +396,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             'p': p, 'n1': n1, 'n2': n2,
             'e1': e1, 'e2': e2,
             'sup': sup, 'elo_usato': elo_usato,
+            'n1_fr': n1_fr, 'n2_fr': n2_fr,  # nomi matched su partite_recenti
         })
 
     # ── FASE 2: fetch quote in parallelo (max 10 worker, rate-limited) ──
@@ -407,6 +419,8 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
         n1, n2 = item['n1'], item['n2']
         e1, e2 = item['e1'], item['e2']
         sup, elo_usato = item['sup'], item['elo_usato']
+        n1_fr = item.get('n1_fr')
+        n2_fr = item.get('n2_fr')
 
         q1, q2 = quote_cache.get(p['id'], (None, None))
 
@@ -441,9 +455,30 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
         trovata = False
         entry = None
 
+        # ── Probabilità: Elo o Markov a seconda di config ────────────────
+        prob_1 = None
+        prob_2 = None
+        modello_tag = "elo"
+        if MODELLO == "markov":
+            modello_tag = "markov"
+            adj_1 = {}
+            adj_2 = {}
+            if MARKOV_CPI_ABILITATO:
+                adj_1['cpi'] = MARKOV_CPI.get(sup, 0.0)
+                adj_2['cpi'] = MARKOV_CPI.get(sup, 0.0)
+            if MARKOV_FATICA_ESTESA and partite_recenti:
+                n1_key = n1_fr if n1_fr else n1
+                n2_key = n2_fr if n2_fr else n2
+                adj_1['fatica_A'] = calcola_fatica_markov(n1_key, partite_recenti, giorni=14)
+                adj_1['fatica_B'] = calcola_fatica_markov(n2_key, partite_recenti, giorni=14)
+                adj_2['fatica_A'] = adj_1['fatica_B']
+                adj_2['fatica_B'] = adj_1['fatica_A']
+            prob_1 = calcola_probabilita_markov(e1, e2, sup, best_of=3, adjustments=adj_1)
+            prob_2 = calcola_probabilita_markov(e2, e1, sup, best_of=3, adjustments=adj_2)
+
         # Calcola segnale P1 solo se q1 in range
         if q1_ok:
-            segnale = genera_segnale(n1, e1, n2, e2, q1, q2)
+            segnale = genera_segnale(n1, e1, n2, e2, q1, q2, prob_override=prob_1)
             entry = {
                 "p1": p['p1'], "p2": p['p2'],
                 "torneo": p['torneo'],
@@ -452,7 +487,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
                 "prob_reale": segnale['prob_reale'],
                 "ev": segnale['ev'],
                 "quota_equa": segnale['quota_equa'],
-                "elo_usato": elo_usato,
+                "elo_usato": f"{elo_usato} [{modello_tag}]",
                 "source": p.get('source', ''),
                 "data_partita": p.get("data_partita", ""),
             }
@@ -462,7 +497,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
 
         # Controlla P2 se P1 non è value (o q1 fuori range) e q2 in range
         if not trovata and q2_ok:
-            segnale2 = genera_segnale(n2, e2, n1, e1, q2, q1)
+            segnale2 = genera_segnale(n2, e2, n1, e1, q2, q1, prob_override=prob_2)
             if segnale2['ev'] >= soglia_ev:
                 value_bets.append({
                     "p1": p['p2'], "p2": p['p1'],
@@ -472,7 +507,7 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
                     "prob_reale": segnale2['prob_reale'],
                     "ev": segnale2['ev'],
                     "quota_equa": segnale2['quota_equa'],
-                    "elo_usato": elo_usato,
+                    "elo_usato": f"{elo_usato} [{modello_tag}]",
                     "source": p.get('source', ''),
                     "data_partita": p.get("data_partita", ""),
                 })

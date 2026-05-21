@@ -26,12 +26,16 @@ def calcola_ev(prob_reale, quota_decimale):
     """
     return (prob_reale * quota_decimale) - 1
 
-def genera_segnale(nome_p1, elo_p1, nome_p2, elo_p2, quota_p1, quota_p2, soglia_ev=0.05):
+def genera_segnale(nome_p1, elo_p1, nome_p2, elo_p2, quota_p1, quota_p2,
+                   soglia_ev=0.05, prob_override=None):
     """
     Funzione principale: dati due giocatori con i loro Elo
     e le quote offerte dal bookmaker, restituisce il verdetto completo.
+
+    prob_override: se fornito, usa questa probabilità invece di calcolarla da Elo
+                   (usato quando MODELLO = "markov" in config.py).
     """
-    prob_reale = prob_da_elo(elo_p1, elo_p2)
+    prob_reale = prob_override if prob_override is not None else prob_da_elo(elo_p1, elo_p2)
     prob_implicita_bk = rimuovi_margine_bookmaker(quota_p1)
 
     # Quota equa Elo: la quota che azzera l'EV secondo la nostra stima

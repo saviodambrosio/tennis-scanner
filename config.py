@@ -49,3 +49,23 @@ SCHEDULER_ABILITATO   = False     # interruttore master: True = attiva loop sche
 ATP_DATA_URL = "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_{year}.csv"
 WTA_DATA_URL = "https://raw.githubusercontent.com/JeffSackmann/tennis_wta/master/wta_matches_{year}.csv"
 ANNI_STORICI = list(range(2020, 2026))  # Anni da scaricare per il backtest
+
+# --- MODELLO DI PROBABILITÀ ---
+# "elo"    → formula Elo standard (veloce, semplice, fallback sempre disponibile)
+# "markov" → modello Markov point-by-point Barnett-Clarke (più granulare)
+MODELLO = "markov"
+
+# --- PARAMETRI MODELLO MARKOV (attivi solo se MODELLO = "markov") ---
+# Adjustment contestuali: True = abilitato, False = neutro (delta = 0)
+MARKOV_CPI_ABILITATO       = False  # Court Pace Index: nessuna fonte affidabile → off
+MARKOV_FATICA_ESTESA       = True   # Fatica 14 giorni di set (invece dei soli 2gg)
+MARKOV_TIMEZONE_ABILITATO  = False  # Penalità fuso orario: richiede dati geo torneo
+MARKOV_ETA_SUPERFICIE      = True   # Over-33 penalità erba
+
+# Court Pace Index per superficie (0 = neutro; +0.01 = +1% SPW su campi veloci).
+# Lasciare a 0 finché non si trova una fonte CPI affidabile e validata.
+MARKOV_CPI = {
+    'hard':  0.0,
+    'clay':  0.0,
+    'grass': 0.0,
+}
