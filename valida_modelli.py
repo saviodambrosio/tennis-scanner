@@ -145,7 +145,16 @@ def valida(n_righe_max=200):
         e2 = r2.get(sup, r2['elo'])
 
         prob_elo = prob_da_elo(e1, e2)
-        prob_mkov = calcola_probabilita_markov(e1, e2, sup, best_of=3)
+        # Applica adjustment età×superficie se disponibile
+        adj = {}
+        eta1 = r1.get('age', 0) or 0
+        eta2 = r2.get('age', 0) or 0
+        if eta1:
+            adj['eta_A'] = eta1
+        if eta2:
+            adj['eta_B'] = eta2
+        prob_mkov = calcola_probabilita_markov(e1, e2, sup, best_of=3,
+                                               adjustments=adj if adj else None)
         outcome = 1 if esito == 'W' else 0
 
         # Prob implicita quota chiusura (devigged se disponibile quota avversario)
@@ -250,10 +259,19 @@ def _valida_sintetico(ratings_ta):
         e1 = r1.get(surf, r1['elo'])
         e2 = r2.get(surf, r2['elo'])
         p_elo  = prob_da_elo(e1, e2)
-        p_mkov = calcola_probabilita_markov(e1, e2, surf, best_of=3)
+        adj = {}
+        eta1 = r1.get('age', 0) or 0
+        eta2 = r2.get('age', 0) or 0
+        if eta1:
+            adj['eta_A'] = eta1
+        if eta2:
+            adj['eta_B'] = eta2
+        p_mkov = calcola_probabilita_markov(e1, e2, surf, best_of=3,
+                                            adjustments=adj if adj else None)
         diff = p_mkov - p_elo
+        age_tag = f" eta={eta1}/{eta2}" if (eta1 or eta2) else ""
         label = f"{p1_name[:18]} vs {p2_name[:18]}"
-        print(f"  {label:<40} {p_elo:.3f}   {p_mkov:.4f}  {diff:>+8.4f}  {surf:>10}")
+        print(f"  {label:<40} {p_elo:.3f}   {p_mkov:.4f}  {diff:>+8.4f}  {surf:>10}{age_tag}")
 
     print("\n  ℹ️  Per confronto con closing line: popola le colonne")
     print("      'Quota Chiusura' nel file data/value_bets_log.xlsx")

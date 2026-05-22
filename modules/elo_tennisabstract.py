@@ -66,10 +66,16 @@ def scarica_elo_tennisabstract(tour='atp'):
         try:
             # Struttura: rank, player, age, elo, '', hrank, helo, crank, celo, grank, gelo
             nome = cells[1].strip()
+            age_raw = cells[2] if len(cells) > 2 else ''
             elo_gen = float(cells[3]) if cells[3] else None
             helo = float(cells[6]) if cells[6] else None
             celo = float(cells[8]) if cells[8] else None
             gelo = float(cells[10]) if cells[10] else None
+
+            try:
+                age = int(float(age_raw)) if age_raw else 0
+            except (ValueError, TypeError):
+                age = 0
 
             if nome and elo_gen:
                 ratings[nome] = {
@@ -77,6 +83,7 @@ def scarica_elo_tennisabstract(tour='atp'):
                     'hard': helo or elo_gen,
                     'clay': celo or elo_gen,
                     'grass': gelo or elo_gen,
+                    'age': age,
                     'tour': tour
                 }
         except (ValueError, IndexError):
@@ -126,6 +133,7 @@ def carica_elo_aggiornato(forza_refresh=False):
             'hard': d['hard'],
             'clay': d['clay'],
             'grass': d['grass'],
+            'age': d.get('age', 0),
             'tour': d['tour']
         })
     df = pd.DataFrame(righe)
@@ -149,6 +157,7 @@ def _carica_da_cache():
             'hard': row['hard'],
             'clay': row['clay'],
             'grass': row['grass'],
+            'age': int(row['age']) if 'age' in row and not pd.isna(row['age']) else 0,
             'tour': row['tour']
         }
     return ratings
