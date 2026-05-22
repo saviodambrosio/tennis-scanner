@@ -397,6 +397,8 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
             'e1': e1, 'e2': e2,
             'sup': sup, 'elo_usato': elo_usato,
             'n1_fr': n1_fr, 'n2_fr': n2_fr,  # nomi matched su partite_recenti
+            'eta1': r1.get('age', 0) or 0,
+            'eta2': r2.get('age', 0) or 0,
         })
 
     # ── FASE 2: fetch quote in parallelo (max 10 worker, rate-limited) ──
@@ -473,6 +475,15 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
                 adj_1['fatica_B'] = calcola_fatica_markov(n2_key, partite_recenti, giorni=14)
                 adj_2['fatica_A'] = adj_1['fatica_B']
                 adj_2['fatica_B'] = adj_1['fatica_A']
+            if MARKOV_ETA_SUPERFICIE:
+                eta1 = item.get('eta1', 0)
+                eta2 = item.get('eta2', 0)
+                if eta1:
+                    adj_1['eta_A'] = eta1
+                    adj_2['eta_B'] = eta1
+                if eta2:
+                    adj_1['eta_B'] = eta2
+                    adj_2['eta_A'] = eta2
             prob_1 = calcola_probabilita_markov(e1, e2, sup, best_of=3, adjustments=adj_1)
             prob_2 = calcola_probabilita_markov(e2, e1, sup, best_of=3, adjustments=adj_2)
 

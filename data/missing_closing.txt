@@ -1,0 +1,141 @@
+﻿Righe senza Quota Chiusura: 139
+           Data    Ora                    🎯 PUNTA SU                    Avversario                                                                  Torneo  Quota Esito
+0    2026-05-05  04:54                    ✅ Evan Zhu              Luca Castelnuovo                     Challenger - ATP Challenger Wuxi, China Men Singles   2.85   NaN
+1    2026-05-05  04:54          ✅ Irina-Camelia Begu            Anastasia Potapova                                     WTA - WTA Rome, Italy Women Singles   5.50   NaN
+2    2026-05-05  04:54             ✅ Clement Chidekh           Alvaro Guillen Meza              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.62   NaN
+3    2026-05-05  04:54               ✅ Leandro Riedi                 Vilius Gaubas                                       ATP - ATP Rome, Italy Men Singles   3.50     L
+4    2026-05-05  04:54         ✅ Juan Pablo Ficovich                 Guy Den Ouden              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.30   NaN
+5    2026-05-05  04:54                ✅ Miguel Tobon               Eduardo Ribeiro                  Challenger - ATP Challenger Santos, Brazil Men Singles   2.75     W
+6    2026-05-05  04:54       ✅ Jack Pinnington Jones                Patrick Kypson                                       ATP - ATP Rome, Italy Men Singles   3.00   NaN
+7    2026-05-05  04:54               ✅ Julia Grabher         Aliaksandra Sasnovich                                     WTA - WTA Rome, Italy Women Singles   3.15     L
+8    2026-05-05  04:54                ✅ Hugo Dellien               Luca Van Assche                                       ATP - ATP Rome, Italy Men Singles   2.32     L
+9    2026-05-05  04:54             ✅ August Holmgren                  Alex Barrena              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.25     W
+10   2026-05-05  04:54                ✅ Justin Engel     Nikolas Sanchez Izquierdo              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.37     L
+11   2026-05-05  04:54  ✅ Marcelo Tomas Barrios Vera                 Jacopo Vasami                                       ATP - ATP Rome, Italy Men Singles   1.68   NaN
+12   2026-05-05  04:54            ✅ Franco Agamenone              Andrea Guerrieri              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.50   NaN
+13   2026-05-05  04:54   ✅ Sascha Gueymard Wayenburg                Martin Krumich              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.20   NaN
+14   2026-05-05  04:54                 ✅ Ella Seidel                Alina Korneeva                                     WTA - WTA Rome, Italy Women Singles   2.00   NaN
+15   2026-05-05  04:54         ✅ Nishesh Basavareddy          Alejandro Moro Canas              Challenger - ATP Challenger Francavilla, Italy Men Singles   1.50   NaN
+16   2026-05-05  04:54                ✅ Alafia Ayeni                Philip Sekulic                     Challenger - ATP Challenger Wuxi, China Men Singles   3.00     W
+17   2026-05-05  04:54        ✅ Aleksandar Kovacevic               Lorenzo Carboni                                       ATP - ATP Rome, Italy Men Singles   1.51     L
+18   2026-05-05  04:54         ✅ Facundo Diaz Acosta                  Henry Bernet              Challenger - ATP Challenger Francavilla, Italy Men Singles   1.53     W
+19   2026-05-05  04:54          ✅ Buvaysar Gadamauri      Juan Carlos Prado Angelo              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.20   NaN
+20   2026-05-05  04:54             ✅ Hayato Matsuoka              Yusuke Takahashi                     Challenger - ATP Challenger Wuxi, China Men Singles   1.66     L
+21   2026-05-05  04:54    ✅ Anastasia Pavlyuchenkova              Veronika Erjavec                                     WTA - WTA Rome, Italy Women Singles   1.50   NaN
+22   2026-05-05  04:54               ✅ Jil Teichmann             Hanne Vandewinkel                                     WTA - WTA Rome, Italy Women Singles   2.50     L
+23   2026-05-05  04:54               ✅ Alastair Gray             Yasutaka Uchiyama                     Challenger - ATP Challenger Wuxi, China Men Singles   1.66   NaN
+24   2026-05-05  04:54            ✅ Alexis Galarneau                       Jie Cui                     Challenger - ATP Challenger Wuxi, China Men Singles   1.42   NaN
+25   2026-05-05  04:54             ✅ Dalibor Svrcina                Benjamin Bonzi                                       ATP - ATP Rome, Italy Men Singles   2.25     W
+26   2026-05-05  04:54              ✅ Katie Volynets             Darja Semenistaja                                     WTA - WTA Rome, Italy Women Singles   1.60     L
+27   2026-05-05  04:54                  ✅ Mark Lajal                  Renta Tokuda                     Challenger - ATP Challenger Wuxi, China Men Singles   1.31   NaN
+28   2026-05-05  04:54             ✅ Leolia Jeanjean                   Diane Parry                                     WTA - WTA Rome, Italy Women Singles   1.71     W
+29   2026-05-05  04:54                ✅ Jose Pereira     Lorenzo Joaquin Rodriguez                  Challenger - ATP Challenger Santos, Brazil Men Singles   3.00   NaN
+30   2026-05-05  04:54               ✅ Stan Wawrinka             Stefano Travaglia                                       ATP - ATP Rome, Italy Men Singles   2.00     L
+31   2026-05-05  04:54              ✅ Jacob Fearnley            Shintaro Mochizuki                                       ATP - ATP Rome, Italy Men Singles   1.58     W
+32   2026-05-05  04:54               ✅ Zsombor Piros                Henrique Rocha                                       ATP - ATP Rome, Italy Men Singles   1.72   NaN
+33   2026-05-05  04:54                 ✅ Sinja Kraus              Dominika Salkova                                     WTA - WTA Rome, Italy Women Singles   1.45     W
+34   2026-05-05  04:54                 ✅ Emilio Nava             Federico Bondioli                                       ATP - ATP Rome, Italy Men Singles   1.22   NaN
+35   2026-05-05  04:54                    ✅ Yue Yuan              Kimberly Birrell                                     WTA - WTA Rome, Italy Women Singles   1.66     L
+36   2026-05-05  04:54                 ✅ Hugo Gaston             Andrea Pellegrino                                       ATP - ATP Rome, Italy Men Singles   1.80   NaN
+37   2026-05-05  04:54               ✅ Garrett Johns      Frederico Ferreira Silva              Challenger - ATP Challenger Francavilla, Italy Men Singles   3.50   NaN
+38   2026-05-05  04:54                ✅ Oceane Dodin           Elena-Gabriela Ruse                                     WTA - WTA Rome, Italy Women Singles  13.00   NaN
+39   2026-05-05  04:54                ✅ Daria Snigur             Samira de Stefano                                     WTA - WTA Rome, Italy Women Singles   1.26     L
+40   2026-05-07  02:35                   ✅ Iiro Vasa                Michael Geerts  Challenger - ATP Challenger Brazzaville, Republic of Congo Men Singles   6.60     W
+41   2026-05-07  02:35           ✅ McCartney Kessler                     Iva Jovic                                     WTA - WTA Rome, Italy Women Singles   3.40     L
+42   2026-05-07  02:35             ✅ Clement Chidekh                Martin Krumich              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.65   NaN
+43   2026-05-07  02:35            ✅ Bianca Andreescu                Belinda Bencic                                     WTA - WTA Rome, Italy Women Singles   4.33     L
+44   2026-05-07  02:35                 ✅ Sinja Kraus        Elisabetta Cocciaretto                                     WTA - WTA Rome, Italy Women Singles   2.37   NaN
+45   2026-05-07  02:35             ✅ August Holmgren                 Guy Den Ouden              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.10   NaN
+46   2026-05-07  02:35         ✅ Anastasia Zakharova                 Linda Noskova                                     WTA - WTA Rome, Italy Women Singles   8.00     L
+47   2026-05-07  02:35          ✅ Buvaysar Gadamauri      Juan Carlos Prado Angelo              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.12   NaN
+48   2026-05-07  02:35             ✅ Jenson Brooksby                Sebastian Baez                                       ATP - ATP Rome, Italy Men Singles   3.55   NaN
+49   2026-05-07  02:35       ✅ Stefanos Sakellaridis                 Gustavo Heide              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.75   NaN
+50   2026-05-07  02:35          ✅ Jan-Lennard Struff            Francisco Comesana                                       ATP - ATP Rome, Italy Men Singles   2.57   NaN
+51   2026-05-07  02:35                ✅ Lois Boisson            Katerina Siniakova                                     WTA - WTA Rome, Italy Women Singles   3.60   NaN
+52   2026-05-07  02:35             ✅ Federica Urgesi             Viktorija Golubic                                     WTA - WTA Rome, Italy Women Singles   2.80   NaN
+53   2026-05-07  02:35                      ✅ Ann Li            Liudmila Samsonova                                     WTA - WTA Rome, Italy Women Singles   2.15   NaN
+54   2026-05-07  02:35              ✅ Simona Waltert          Yuliia Starodubtseva                                     WTA - WTA Rome, Italy Women Singles   2.27     W
+55   2026-05-07  02:35                ✅ Caty McNally               Daria Kasatkina                                     WTA - WTA Rome, Italy Women Singles   2.00   NaN
+56   2026-05-07  02:35       ✅ Roberto Bautista Agut          Francesco Maestrelli                                       ATP - ATP Rome, Italy Men Singles   1.50   NaN
+57   2026-05-07  02:35            ✅ Yulia Putintseva              Tereza Valentova                                     WTA - WTA Rome, Italy Women Singles   2.18   NaN
+58   2026-05-07  02:35                 ✅ Vit Kopriva               Fabian Marozsan                                       ATP - ATP Rome, Italy Men Singles   2.35   NaN
+59   2026-05-07  02:35            ✅ Alexander Blockx                 Federico Cina                                       ATP - ATP Rome, Italy Men Singles   1.28     W
+60   2026-05-07  02:35             ✅ Rebeka Masarova           Oksana Selekhmeteva                                     WTA - WTA Rome, Italy Women Singles   1.75   NaN
+61   2026-05-07  02:35             ✅ Leolia Jeanjean           Beatriz Haddad Maia                                     WTA - WTA Rome, Italy Women Singles   1.70     L
+62   2026-05-07  02:35            ✅ Denis Shapovalov                Mariano Navone                                       ATP - ATP Rome, Italy Men Singles   2.57     L
+63   2026-05-07  02:35          ✅ Stefanos Tsitsipas                  Tomas Machac                                       ATP - ATP Rome, Italy Men Singles   1.72     L
+64   2026-05-07  02:35              ✅ Matteo Arnaldi                   Jaume Munar                                       ATP - ATP Rome, Italy Men Singles   1.61   NaN
+65   2026-05-07  02:35           ✅ Karolina Pliskova        Jessica Bouzas Maneiro                                     WTA - WTA Rome, Italy Women Singles   1.61   NaN
+66   2026-05-07  02:35              ✅ Alina Korneeva                 Panna Udvardy                                     WTA - WTA Rome, Italy Women Singles   2.55   NaN
+67   2026-05-07  02:35                ✅ Andre Ilagan                   Dane Sweeny                     Challenger - ATP Challenger Wuxi, China Men Singles   2.62   NaN
+68   2026-05-07  02:35         ✅ Nishesh Basavareddy                    Jay Clarke              Challenger - ATP Challenger Francavilla, Italy Men Singles   1.35     L
+69   2026-05-07  02:35                ✅ Dino Prizmic              Marton Fucsovics                                       ATP - ATP Rome, Italy Men Singles   1.40     W
+70   2026-05-07  02:35             ✅ Taylor Townsend              Nuria Brancaccio                                     WTA - WTA Rome, Italy Women Singles   1.32     W
+71   2026-05-07  02:35               ✅ Zeynep Sonmez                Jessica Pegula                                     WTA - WTA Rome, Italy Women Singles   4.55   NaN
+72   2026-05-07  02:35     ✅ Roman Andres Burruchaga               Mattia Bellucci                                       ATP - ATP Rome, Italy Men Singles   1.45   NaN
+73   2026-05-07  02:35       ✅ Oleksandra Oliynykova                  Clara Tauson                                     WTA - WTA Rome, Italy Women Singles   2.37     W
+74   2026-05-07  02:35           ✅ Marco Trungelliti                Zachary Svajda                                       ATP - ATP Rome, Italy Men Singles   1.44   NaN
+75   2026-05-07  02:35                ✅ Qinwen Zheng                Cristina Bucsa                                     WTA - WTA Rome, Italy Women Singles   1.20     W
+76   2026-05-07  02:35               ✅ Magda Linette                 Tatjana Maria                                     WTA - WTA Rome, Italy Women Singles   1.31   NaN
+77   2026-05-07  02:35               ✅ Alastair Gray                       Jie Cui                     Challenger - ATP Challenger Wuxi, China Men Singles   1.50   NaN
+78   2026-05-07  02:35           ✅ Matteo Berrettini                Alexei Popyrin                                       ATP - ATP Rome, Italy Men Singles   1.47     L
+79   2026-05-07  02:35              ✅ Jesper De Jong                   Nuno Borges                                       ATP - ATP Rome, Italy Men Singles   2.05   NaN
+80   2026-05-07  02:35    ✅ Frederico Ferreira Silva               Chun Hsin Tseng              Challenger - ATP Challenger Francavilla, Italy Men Singles   2.10   NaN
+81   2026-05-07  02:35                 ✅ Sara Bejlek               Laura Siegemund                                     WTA - WTA Rome, Italy Women Singles   1.55   NaN
+82   2026-05-07  02:35             ✅ Hernan Casanova                  Mateus Alves                  Challenger - ATP Challenger Santos, Brazil Men Singles   1.53     W
+83   2026-05-07  02:35            ✅ Hamad Medjedovic                Valentin Royer                                       ATP - ATP Rome, Italy Men Singles   1.36     W
+84   2026-05-07  02:35            ✅ Alejandro Tabilo           Pablo Carreno Busta                                       ATP - ATP Rome, Italy Men Singles   1.47   NaN
+85   2026-05-07  02:35     ✅ Botic Van de Zandschulp              Alexandre Muller                                       ATP - ATP Rome, Italy Men Singles   1.70   NaN
+86   2026-05-07  02:35                ✅ Ignacio Buse                Lorenzo Sonego                                       ATP - ATP Rome, Italy Men Singles   1.60     W
+87   2026-05-07  02:35               ✅ Katie Boulter                       Eva Lys                                     WTA - WTA Rome, Italy Women Singles   1.62   NaN
+88   2026-05-07  02:35               ✅ Zhizhen Zhang               Daniel Altmaier                                       ATP - ATP Rome, Italy Men Singles   2.30   NaN
+89   2026-05-07  02:35       ✅ Digvijay Pratap Singh             Karan (IND) Singh  Challenger - ATP Challenger Brazzaville, Republic of Congo Men Singles   2.15   NaN
+90   2026-05-07  02:35   ✅ Nikolas Sanchez Izquierdo           Facundo Diaz Acosta              Challenger - ATP Challenger Francavilla, Italy Men Singles   3.15     L
+91   2026-05-07  02:35                ✅ Lilli Tagger                 Maria Sakkari                                     WTA - WTA Rome, Italy Women Singles   2.40   NaN
+92   2026-05-07  02:35           ✅ Mikhail Kukushkin                    Mark Lajal                     Challenger - ATP Challenger Wuxi, China Men Singles   2.37   NaN
+93   2026-05-07  03:05            ✅ Tamara Korpatsch                 Solana Sierra                                     WTA - WTA Rome, Italy Women Singles   2.00   NaN
+94   2026-05-07  03:17             ✅ Noemi Basiletti              Ajla Tomljanovic                                     WTA - WTA Rome, Italy Women Singles   4.33     W
+95   2026-05-09  02:10                ✅ Caty McNally                   Iga Swiatek                                     WTA - WTA Rome, Italy Women Singles   8.00   NaN
+96   2026-05-09  02:10              ✅ Matteo Arnaldi                Alex de Minaur                                       ATP - ATP Rome, Italy Men Singles   3.20   NaN
+97   2026-05-09  02:10               ✅ Damir Dzumhur                  Learner Tien                                       ATP - ATP Rome, Italy Men Singles   2.37   NaN
+98   2026-05-09  02:10       ✅ Roberto Bautista Agut             Brandon Nakashima                                       ATP - ATP Rome, Italy Men Singles   2.75   NaN
+99   2026-05-09  02:10       ✅ Oleksandra Oliynykova                 Linda Noskova                                     WTA - WTA Rome, Italy Women Singles   4.33     L
+100  2026-05-09  02:10             ✅ Rebeka Masarova              Leylah Fernandez                                     WTA - WTA Rome, Italy Women Singles   3.00   NaN
+101  2026-05-09  02:10           ✅ Pablo Llamas Ruiz               Corentin Moutet                                       ATP - ATP Rome, Italy Men Singles   2.12     W
+102  2026-05-09  02:10                      ✅ Ann Li            Liudmila Samsonova                                     WTA - WTA Rome, Italy Women Singles   2.15   NaN
+103  2026-05-09  02:10                ✅ Talia Gibson                Diana Shnaider                                     WTA - WTA Rome, Italy Women Singles   5.50   NaN
+104  2026-05-09  02:10                ✅ Miguel Tobon  Matheus Pucinelli de Almeida                  Challenger - ATP Challenger Santos, Brazil Men Singles   2.12   NaN
+105  2026-05-09  02:10          ✅ Anastasia Potapova              Karolina Muchova                                     WTA - WTA Rome, Italy Women Singles   2.62   NaN
+106  2026-05-09  02:10              ✅ Simona Waltert               Hailey Baptiste                                     WTA - WTA Rome, Italy Women Singles   2.85   NaN
+107  2026-05-09  02:10                     ✅ Eva Lys                   Naomi Osaka                                     WTA - WTA Rome, Italy Women Singles   3.50   NaN
+108  2026-05-09  02:10            ✅ Aleksandar Vukic                    Tommy Paul                                       ATP - ATP Rome, Italy Men Singles   6.80   NaN
+109  2026-05-09  02:10               ✅ Maria Sakkari                Elena Rybakina                                     WTA - WTA Rome, Italy Women Singles   6.00   NaN
+110  2026-05-09  02:10  ✅ Giovanni Mpetshi Perricard               Lorenzo Musetti                                       ATP - ATP Rome, Italy Men Singles   5.50   NaN
+111  2026-05-09  02:10            ✅ Alejandro Tabilo           Francisco Cerundolo                                       ATP - ATP Rome, Italy Men Singles   2.37   NaN
+112  2026-05-09  02:10           ✅ Franco Roncadelli         Joao Eduardo Schiessl                  Challenger - ATP Challenger Santos, Brazil Men Singles   1.53     W
+113  2026-05-09  02:10              ✅ Alexei Popyrin                  Jakub Mensik                                       ATP - ATP Rome, Italy Men Singles   2.90     W
+114  2026-05-09  02:10            ✅ Yannick Hanfmann               Luciano Darderi                                       ATP - ATP Rome, Italy Men Singles   2.30   NaN
+115  2026-05-09  02:10             ✅ Jasmine Paolini                 Elise Mertens                                     WTA - WTA Rome, Italy Women Singles   2.10     L
+116  2026-05-09  02:10               ✅ Zeynep Sonmez                Jessica Pegula                                     WTA - WTA Rome, Italy Women Singles   4.33   NaN
+117  2026-05-09  02:10                 ✅ Rio Noguchi                       Jie Cui                     Challenger - ATP Challenger Wuxi, China Men Singles   1.52   NaN
+118  2026-05-09  02:10           ✅ Karolina Pliskova            Jaqueline Cristian                                     WTA - WTA Rome, Italy Women Singles   1.72   NaN
+119  2026-05-09  02:10             ✅ Noemi Basiletti               Elina Svitolina                                     WTA - WTA Rome, Italy Women Singles  13.50   NaN
+120  2026-05-09  02:10                 ✅ Vit Kopriva                   Ugo Humbert                                       ATP - ATP Rome, Italy Men Singles   1.60   NaN
+121  2026-05-09  02:10            ✅ Alexander Blockx             Tallon Griekspoor                                       ATP - ATP Rome, Italy Men Singles   1.47   NaN
+122  2026-05-09  02:10        ✅ Alexander Shevchenko               Karen Khachanov                                       ATP - ATP Rome, Italy Men Singles   3.00   NaN
+123  2026-05-09  02:10         ✅ Tyra Caterina Grant                Victoria Mboko                                     WTA - WTA Rome, Italy Women Singles   3.50   NaN
+124  2026-05-09  02:10             ✅ Anna Kalinskaya                Belinda Bencic                                     WTA - WTA Rome, Italy Women Singles   3.05     W
+125  2026-05-09  02:10          ✅ Jan-Lennard Struff                  Jiri Lehecka                                       ATP - ATP Rome, Italy Men Singles   4.15   NaN
+126  2026-05-09  02:10     ✅ Botic Van de Zandschulp          Aleksandar Kovacevic                                       ATP - ATP Rome, Italy Men Singles   1.29   NaN
+127  2026-05-09  02:10                ✅ Emma Navarro        Elisabetta Cocciaretto                                     WTA - WTA Rome, Italy Women Singles   2.37   NaN
+128  2026-05-09  02:10              ✅ Cristian Garin   Alejandro Davidovich Fokina                                       ATP - ATP Rome, Italy Men Singles   2.20     L
+129  2026-05-09  02:10                 ✅ Ben Shelton          Nikoloz Basilashvili                                       ATP - ATP Rome, Italy Men Singles   1.30     L
+130  2026-05-14  21:53               ✅ Chris Rodesch                   Luka Mikrut                 Challenger - ATP Challenger Zagreb, Croatia Men Singles   2.02   NaN
+131  2026-05-14  21:53               ✅ Quentin Halys       Botic Van de Zandschulp                Challenger - ATP Challenger Bordeaux, France Men Singles   2.50   NaN
+132  2026-05-14  21:53            ✅ Aleksandar Vukic    Giovanni Mpetshi Perricard                Challenger - ATP Challenger Bordeaux, France Men Singles   2.62   NaN
+133  2026-05-14  21:53               ✅ Leandro Riedi             Miomir Kecmanovic                 Challenger - ATP Challenger Valencia, Spain Men Singles   2.22   NaN
+134  2026-05-14  21:53               ✅ Maximus Jones                Philip Sekulic              Challenger - ATP Challenger Bengaluru 2, India Men Singles   2.50   NaN
+135  2026-05-14  21:53               ✅ Petr Brunclik                   Jaime Faria              Challenger - ATP Challenger Oeiras 4, Portugal Men Singles   3.55   NaN
+136  2026-05-14  21:53    ✅ Joao Lucas Reis Da Silva                  Elmer Moller                 Challenger - ATP Challenger Zagreb, Croatia Men Singles   2.67   NaN
+137  2026-05-14  21:53              ✅ Benjamin Bonzi             Tallon Griekspoor                Challenger - ATP Challenger Bordeaux, France Men Singles   2.10   NaN
+138  2026-05-14  21:53        ✅ Alexander Shevchenko             Raphael Collignon                Challenger - ATP Challenger Bordeaux, France Men Singles   2.92   NaN

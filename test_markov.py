@@ -114,7 +114,7 @@ def test_calcola_probabilita_markov():
     # Simmetria: P(A|elo_A>elo_B) + P(B|elo_B<elo_A) ≈ 1
     pm_a = calcola_probabilita_markov(1900, 1700, 'hard')
     pm_b = calcola_probabilita_markov(1700, 1900, 'hard')
-    assert_approx(pm_a + pm_b, 1.0, tol=0.01, label="Simmetria: P(A)+P(B)≈1")
+    assert_approx(pm_a + pm_b, 1.0, tol=0.01, label="Simmetria: P(A)+P(B)~=1")
 
     # Adjustments: fatica riduce la prob
     adj_fat = {'fatica_A': -0.02, 'fatica_B': 0.0}

@@ -9,7 +9,13 @@
       "WebFetch(domain:www.tennisabstract.com)",
       "Bash(set PYTHONIOENCODING=utf-8)",
       "Bash(python -W ignore -c ' *)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(git *)",
+      "WebFetch(domain:www.oddsportal.com)",
+      "PowerShell(cd \"C:\\\\Users\\\\savio\\\\Desktop\\\\tennis_scanner\"; .\\\\venv\\\\Scripts\\\\Activate.ps1; $env:PYTHONIOENCODING=\"utf-8\"; python test_markov.py 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\savio\\\\Desktop\\\\tennis_scanner\"; .\\\\venv\\\\Scripts\\\\Activate.ps1; $env:PYTHONIOENCODING=\"utf-8\"; python valida_modelli.py 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\savio\\\\Desktop\\\\tennis_scanner\"; .\\\\venv\\\\Scripts\\\\Activate.ps1; $env:PYTHONIOENCODING=\"utf-8\"; python _check_age.py 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\savio\\\\Desktop\\\\tennis_scanner\"; .\\\\venv\\\\Scripts\\\\Activate.ps1; $env:PYTHONIOENCODING=\"utf-8\"; python _valida_sintetico.py 2>&1)"
     ]
   }
 }
