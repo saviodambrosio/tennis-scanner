@@ -10,7 +10,7 @@ from modules.elo_tennisabstract import (
     carica_elo_aggiornato, trova_giocatore_ta, verifica_disponibilita
 )
 from modules.odds_apiio import get_partite_con_quote_oggi, get_quote_evento as get_quote_apiio
-from modules.signals import genera_segnale
+from modules.signals import genera_segnale, prob_da_elo
 from modules.forma_recente import carica_partite_recenti, calcola_forma, aggiusta_elo_per_forma, calcola_h2h, calcola_fatica
 from modules.data_2025 import scarica_e_salva_2026
 from openpyxl import Workbook, load_workbook
@@ -37,8 +37,10 @@ except Exception:
     MARKOV_ETA_SUPERFICIE = True
     MARKOV_CPI = {'hard': 0.0, 'clay': 0.0, 'grass': 0.0}
 
-if MODELLO == "markov":
-    from modules.markov import calcola_probabilita_markov, calcola_fatica_markov
+# Markov sempre importato: calcoliamo sempre entrambi i modelli (Elo + Markov)
+# così l'Excel mostra le due quote in parallelo. MODELLO determina solo quale
+# modello guida la soglia EV per il flag "value bet".
+from modules.markov import calcola_probabilita_markov, calcola_fatica_markov
 
 SUPERFICIE_MAP = {
     'clay': 'clay', 'red clay': 'clay', 'clay (red)': 'clay',
@@ -151,6 +153,20 @@ def get_partite_sofascore(data=None):
 def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
+    # Nuovo header con doppia colonna modello (Elo + Markov)
+    HEADERS = [
+        "Data", "Ora", "🎯 PUNTA SU", "Avversario",
+        "Torneo", "Superficie", "Quota",
+        # Blocco Elo
+        "Prob Elo %", "Quota Equa Elo", "EV Elo %",
+        # Blocco Markov
+        "Prob Markov %", "Quota Equa Markov", "EV Markov %",
+        # Metadati e tracking
+        "Elo Usato", "Fonte",
+        "Quota Apertura", "Quota Chiusura", "CLV %",
+        "Esito", "Profitto"
+    ]
+
     verde_scuro  = PatternFill("solid", fgColor="1E7145")
     verde_chiaro = PatternFill("solid", fgColor="C6EFCE")
     bianco       = PatternFill("solid", fgColor="FFFFFF")
@@ -161,10 +177,63 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
     blu_ap_h     = PatternFill("solid", fgColor="4472C4")
     arancione_d  = PatternFill("solid", fgColor="FCE4D6")
     verde_clv_d  = PatternFill("solid", fgColor="E2EFDA")
+    # Header tinted per i due blocchi modello
+    blu_elo_h    = PatternFill("solid", fgColor="305496")  # blu scuro = Elo
+    blu_elo_d    = PatternFill("solid", fgColor="D9E1F2")  # blu chiaro dati
+    viola_mk_h   = PatternFill("solid", fgColor="7030A0")  # viola scuro = Markov
+    viola_mk_d   = PatternFill("solid", fgColor="E4D7F0")  # viola chiaro dati
     bordo = Border(
         left=Side(style='thin'), right=Side(style='thin'),
         top=Side(style='thin'), bottom=Side(style='thin')
     )
+
+    def _scrivi_header(ws):
+        # colonne speciali: (fill, font_color)
+        header_speciali = {
+            8:  (blu_elo_h,    "FFFFFF"),  # Prob Elo
+            9:  (blu_elo_h,    "FFFFFF"),  # Quota Equa Elo
+            10: (blu_elo_h,    "FFFFFF"),  # EV Elo
+            11: (viola_mk_h,   "FFFFFF"),  # Prob Markov
+            12: (viola_mk_h,   "FFFFFF"),  # Quota Equa Markov
+            13: (viola_mk_h,   "FFFFFF"),  # EV Markov
+            16: (blu_ap_h,     "FFFFFF"),  # Quota Apertura
+            17: (arancione_h,  "FFFFFF"),  # Quota Chiusura
+            18: (verde_clv_h,  "FFFFFF"),  # CLV %
+        }
+        for col, h in enumerate(HEADERS, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            fill_h, fc = header_speciali.get(col, (verde_scuro, "FFFFFF"))
+            cell.fill = fill_h
+            cell.font = Font(bold=True, color=fc, size=11)
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.border = bordo
+        ws.row_dimensions[1].height = 30
+
+    # Verifica se il file esistente ha la vecchia struttura (senza colonne Markov)
+    formato_vecchio = False
+    if os.path.exists(filepath):
+        try:
+            wb_check = load_workbook(filepath)
+            ws_check = wb_check.active
+            headers_attuali = [ws_check.cell(1, c).value for c in range(1, ws_check.max_column + 1)]
+            if "Prob Markov %" not in headers_attuali or "Quota Equa Elo" not in headers_attuali:
+                formato_vecchio = True
+        except Exception:
+            formato_vecchio = True
+
+    if formato_vecchio:
+        # Backup del vecchio file e ripartenza con il nuovo schema
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = filepath.replace(".xlsx", f"_backup_pre_markov_{ts}.xlsx")
+        try:
+            os.rename(filepath, backup_path)
+            print(f"  📦 Vecchio Excel salvato come backup: {backup_path}")
+        except Exception as e:
+            print(f"  ⚠️  Backup vecchio Excel fallito ({e}), procedo sovrascrivendo")
+            try:
+                os.remove(filepath)
+            except Exception:
+                pass
 
     if os.path.exists(filepath):
         wb = load_workbook(filepath)
@@ -201,34 +270,18 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         ws = wb.active
         ws.title = "Value Bets Log"
         partite_esistenti = set()
-
-        headers = [
-            "Data", "Ora", "🎯 PUNTA SU", "Avversario",
-            "Torneo", "Superficie", "Quota", "Quota Min",
-            "Prob Elo %", "EV %", "Elo Usato", "Fonte",
-            "Quota Apertura", "Quota Chiusura", "CLV %",
-            "Esito", "Profitto"
-        ]
-        # colonne speciali: (fill, font_color)
-        header_speciali = {
-            13: (blu_ap_h,      "FFFFFF"),
-            14: (arancione_h,   "FFFFFF"),
-            15: (verde_clv_h,   "FFFFFF"),
-        }
-        for col, h in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=h)
-            fill_h, fc = header_speciali.get(col, (verde_scuro, "FFFFFF"))
-            cell.fill = fill_h
-            cell.font = Font(bold=True, color=fc, size=11)
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            cell.border = bordo
-
-        ws.row_dimensions[1].height = 30
+        _scrivi_header(ws)
         prossima_riga = 2
 
     ora_now = datetime.now()
     aggiunte = 0
     saltate = 0
+
+    def _pct(x):
+        try:
+            return round(float(x) * 100, 1)
+        except (TypeError, ValueError):
+            return ""
 
     for i, v in enumerate(value_bets):
         giocatore = v['p1']
@@ -246,6 +299,14 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         riga = prossima_riga + aggiunte
         fill = verde_chiaro if aggiunte % 2 == 0 else bianco
 
+        # Fallback: se mancano i campi nuovi (vecchi dict), riusa prob_reale/ev/quota_equa
+        prob_elo_v   = v.get('prob_elo',   v.get('prob_reale'))
+        equa_elo_v   = v.get('quota_equa_elo',   v.get('quota_equa'))
+        ev_elo_v     = v.get('ev_elo',     v.get('ev'))
+        prob_mk_v    = v.get('prob_markov',     v.get('prob_reale'))
+        equa_mk_v    = v.get('quota_equa_markov', v.get('quota_equa'))
+        ev_mk_v      = v.get('ev_markov',  v.get('ev'))
+
         valori = [
             v.get('data_partita', ora_now.strftime("%Y-%m-%d")),
             ora_now.strftime("%H:%M"),
@@ -253,10 +314,16 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
             avversario,
             v['torneo'],
             v['superficie'].upper(),
-            v['quota_p1'],              # Quota attuale
-            v['quota_equa'],            # Quota minima accettabile
-            round(v['prob_reale'] * 100, 1),
-            round(v['ev'] * 100, 1),
+            v['quota_p1'],              # Quota mercato attuale
+            # ── Blocco Elo ──
+            _pct(prob_elo_v),
+            equa_elo_v,
+            _pct(ev_elo_v),
+            # ── Blocco Markov ──
+            _pct(prob_mk_v),
+            equa_mk_v,
+            _pct(ev_mk_v),
+            # ── Metadati / tracking ──
             v.get('elo_usato', ''),
             v.get('source', ''),
             v['quota_p1'],              # Quota Apertura (snapshot al momento scoperta)
@@ -276,16 +343,15 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
                 cell.fill = azzurro
                 cell.font = Font(bold=True, size=11)
                 cell.alignment = Alignment(horizontal="left", vertical="center")
-            # Colonna quota attuale
+            # Quota mercato
             elif col == 7:
                 cell.fill = fill
                 cell.font = Font(bold=True, size=12)
-            # Colonna quota minima
-            elif col == 8:
-                cell.fill = PatternFill("solid", fgColor="FFE699")
-                cell.font = Font(italic=True)
-            # Colonna EV con colori
-            elif col == 10 and isinstance(val, float):
+            # ── Blocco Elo (8=Prob, 9=QuotaEqua, 10=EV) ─────────────────
+            elif col in (8, 9):
+                cell.fill = blu_elo_d
+            elif col == 10 and isinstance(val, (int, float)):
+                # EV Elo colorata per intensità
                 if val >= 50:
                     cell.fill = PatternFill("solid", fgColor="FF0000")
                     cell.font = Font(bold=True, color="FFFFFF")
@@ -295,16 +361,30 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
                 elif val >= 10:
                     cell.fill = giallo
                 else:
-                    cell.fill = fill
-            # Quota Apertura: stesso stile quota
-            elif col == 13:
+                    cell.fill = blu_elo_d
+            # ── Blocco Markov (11=Prob, 12=QuotaEqua, 13=EV) ────────────
+            elif col in (11, 12):
+                cell.fill = viola_mk_d
+            elif col == 13 and isinstance(val, (int, float)):
+                if val >= 50:
+                    cell.fill = PatternFill("solid", fgColor="FF0000")
+                    cell.font = Font(bold=True, color="FFFFFF")
+                elif val >= 20:
+                    cell.fill = PatternFill("solid", fgColor="FFC000")
+                    cell.font = Font(bold=True)
+                elif val >= 10:
+                    cell.fill = giallo
+                else:
+                    cell.fill = viola_mk_d
+            # Quota Apertura
+            elif col == 16:
                 cell.fill = fill
                 cell.font = Font(bold=True, size=12)
-            # Quota Chiusura: vuota, sfondo arancione chiaro
-            elif col == 14:
+            # Quota Chiusura: sfondo arancione chiaro
+            elif col == 17:
                 cell.fill = arancione_d
-            # CLV %: vuota, sfondo verde chiaro
-            elif col == 15:
+            # CLV %: sfondo verde chiaro
+            elif col == 18:
                 cell.fill = verde_clv_d
             else:
                 cell.fill = fill
@@ -312,8 +392,13 @@ def salva_value_bets_excel(value_bets, filepath="data/value_bets_log.xlsx"):
         ws.row_dimensions[riga].height = 22
         aggiunte += 1
 
-    # Larghezze colonne
-    larghezze = [12, 8, 28, 22, 30, 10, 8, 10, 10, 8, 12, 12, 14, 14, 10, 8, 10]
+    # Larghezze colonne (19 colonne totali)
+    larghezze = [
+        12, 8, 28, 22, 30, 10, 8,            # base
+        10, 14, 10,                          # Elo
+        12, 16, 12,                          # Markov
+        14, 12, 14, 14, 10, 8, 10            # metadati + tracking
+    ]
     for col, width in enumerate(larghezze, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -457,39 +542,55 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
         trovata = False
         entry = None
 
-        # ── Probabilità: Elo o Markov a seconda di config ────────────────
-        prob_1 = None
-        prob_2 = None
-        modello_tag = "elo"
+        # ── Probabilità: SEMPRE entrambi i modelli (Elo + Markov) ────────
+        # Elo: derivato direttamente dai rating Tennis Abstract (con adj forma/h2h/fatica)
+        prob_elo_1 = prob_da_elo(e1, e2)
+        prob_elo_2 = prob_da_elo(e2, e1)
+
+        # Markov: con adjustment contestuali (CPI, fatica 14gg, età × superficie)
+        adj_1: dict = {}
+        adj_2: dict = {}
+        if MARKOV_CPI_ABILITATO:
+            adj_1['cpi'] = MARKOV_CPI.get(sup, 0.0)
+            adj_2['cpi'] = MARKOV_CPI.get(sup, 0.0)
+        if MARKOV_FATICA_ESTESA and partite_recenti:
+            n1_key = n1_fr if n1_fr else n1
+            n2_key = n2_fr if n2_fr else n2
+            adj_1['fatica_A'] = calcola_fatica_markov(n1_key, partite_recenti, giorni=14)
+            adj_1['fatica_B'] = calcola_fatica_markov(n2_key, partite_recenti, giorni=14)
+            adj_2['fatica_A'] = adj_1['fatica_B']
+            adj_2['fatica_B'] = adj_1['fatica_A']
+        if MARKOV_ETA_SUPERFICIE:
+            eta1 = item.get('eta1', 0)
+            eta2 = item.get('eta2', 0)
+            if eta1:
+                adj_1['eta_A'] = eta1
+                adj_2['eta_B'] = eta1
+            if eta2:
+                adj_1['eta_B'] = eta2
+                adj_2['eta_A'] = eta2
+        prob_markov_1 = calcola_probabilita_markov(e1, e2, sup, best_of=3, adjustments=adj_1)
+        prob_markov_2 = calcola_probabilita_markov(e2, e1, sup, best_of=3, adjustments=adj_2)
+
+        # Modello primario (guida la soglia EV per il flag value bet)
         if MODELLO == "markov":
+            prob_1, prob_2 = prob_markov_1, prob_markov_2
             modello_tag = "markov"
-            adj_1 = {}
-            adj_2 = {}
-            if MARKOV_CPI_ABILITATO:
-                adj_1['cpi'] = MARKOV_CPI.get(sup, 0.0)
-                adj_2['cpi'] = MARKOV_CPI.get(sup, 0.0)
-            if MARKOV_FATICA_ESTESA and partite_recenti:
-                n1_key = n1_fr if n1_fr else n1
-                n2_key = n2_fr if n2_fr else n2
-                adj_1['fatica_A'] = calcola_fatica_markov(n1_key, partite_recenti, giorni=14)
-                adj_1['fatica_B'] = calcola_fatica_markov(n2_key, partite_recenti, giorni=14)
-                adj_2['fatica_A'] = adj_1['fatica_B']
-                adj_2['fatica_B'] = adj_1['fatica_A']
-            if MARKOV_ETA_SUPERFICIE:
-                eta1 = item.get('eta1', 0)
-                eta2 = item.get('eta2', 0)
-                if eta1:
-                    adj_1['eta_A'] = eta1
-                    adj_2['eta_B'] = eta1
-                if eta2:
-                    adj_1['eta_B'] = eta2
-                    adj_2['eta_A'] = eta2
-            prob_1 = calcola_probabilita_markov(e1, e2, sup, best_of=3, adjustments=adj_1)
-            prob_2 = calcola_probabilita_markov(e2, e1, sup, best_of=3, adjustments=adj_2)
+        else:
+            prob_1, prob_2 = prob_elo_1, prob_elo_2
+            modello_tag = "elo"
+
+        # Helper: dato prob + quota, ritorna (quota_equa, ev)
+        def _equa_ev(prob: float, quota: float) -> tuple:
+            equa = round(1.0 / prob, 2) if prob > 0 else 99
+            ev = round((prob * quota) - 1.0, 4)
+            return equa, ev
 
         # Calcola segnale P1 solo se q1 in range
         if q1_ok:
             segnale = genera_segnale(n1, e1, n2, e2, q1, q2, prob_override=prob_1)
+            quota_equa_elo_1, ev_elo_1       = _equa_ev(prob_elo_1, q1)
+            quota_equa_markov_1, ev_markov_1 = _equa_ev(prob_markov_1, q1)
             entry = {
                 "p1": p['p1'], "p2": p['p2'],
                 "torneo": p['torneo'],
@@ -498,6 +599,14 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
                 "prob_reale": segnale['prob_reale'],
                 "ev": segnale['ev'],
                 "quota_equa": segnale['quota_equa'],
+                # Doppio modello (sempre presenti)
+                "prob_elo": round(prob_elo_1, 4),
+                "quota_equa_elo": quota_equa_elo_1,
+                "ev_elo": ev_elo_1,
+                "prob_markov": round(prob_markov_1, 4),
+                "quota_equa_markov": quota_equa_markov_1,
+                "ev_markov": ev_markov_1,
+                "modello_primario": modello_tag,
                 "elo_usato": f"{elo_usato} [{modello_tag}]",
                 "source": p.get('source', ''),
                 "data_partita": p.get("data_partita", ""),
@@ -509,6 +618,8 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
         # Controlla P2 se P1 non è value (o q1 fuori range) e q2 in range
         if not trovata and q2_ok:
             segnale2 = genera_segnale(n2, e2, n1, e1, q2, q1, prob_override=prob_2)
+            quota_equa_elo_2, ev_elo_2       = _equa_ev(prob_elo_2, q2)
+            quota_equa_markov_2, ev_markov_2 = _equa_ev(prob_markov_2, q2)
             if segnale2['ev'] >= soglia_ev:
                 value_bets.append({
                     "p1": p['p2'], "p2": p['p1'],
@@ -518,6 +629,13 @@ def analizza_partite(partite, ratings_ta, soglia_ev, get_quote_fn, partite_recen
                     "prob_reale": segnale2['prob_reale'],
                     "ev": segnale2['ev'],
                     "quota_equa": segnale2['quota_equa'],
+                    "prob_elo": round(prob_elo_2, 4),
+                    "quota_equa_elo": quota_equa_elo_2,
+                    "ev_elo": ev_elo_2,
+                    "prob_markov": round(prob_markov_2, 4),
+                    "quota_equa_markov": quota_equa_markov_2,
+                    "ev_markov": ev_markov_2,
+                    "modello_primario": modello_tag,
                     "elo_usato": f"{elo_usato} [{modello_tag}]",
                     "source": p.get('source', ''),
                     "data_partita": p.get("data_partita", ""),
@@ -559,8 +677,8 @@ def aggiorna_esiti_excel(
     col_data     = header_map.get("Data",         1)
     col_gioc     = header_map.get("🎯 PUNTA SU",  3)
     col_quota    = header_map.get("Quota",        7)
-    col_esito    = header_map.get("Esito",        16)
-    col_profitto = header_map.get("Profitto",     17)
+    col_esito    = header_map.get("Esito",        19)
+    col_profitto = header_map.get("Profitto",     20)
 
     aggiornati = 0
     n_w = 0
@@ -792,8 +910,15 @@ def scansiona(soglia_ev=EV_MINIMO, ev_max=None):
             print(f"  ✅ {v['p1']} vs {v['p2']}")
             print(f"     Torneo    : {v['torneo']}")
             print(f"     Superficie: {v['superficie']} | Elo: {v['elo_usato']}")
-            print(f"     Quota     : {v['quota_p1']} | Quota equa: {v['quota_equa']}")
-            print(f"     Prob Elo  : {v['prob_reale']*100:.1f}% | EV: {v['ev']*100:.1f}%")
+            print(f"     Quota     : {v['quota_p1']}")
+            p_elo = v.get('prob_elo', v.get('prob_reale', 0)) or 0
+            p_mk  = v.get('prob_markov', v.get('prob_reale', 0)) or 0
+            q_elo = v.get('quota_equa_elo', v.get('quota_equa', ''))
+            q_mk  = v.get('quota_equa_markov', v.get('quota_equa', ''))
+            ev_elo = v.get('ev_elo', v.get('ev', 0)) or 0
+            ev_mk  = v.get('ev_markov', v.get('ev', 0)) or 0
+            print(f"     Elo    : prob {p_elo*100:.1f}% | equa {q_elo} | EV {ev_elo*100:+.1f}%")
+            print(f"     Markov : prob {p_mk*100:.1f}% | equa {q_mk} | EV {ev_mk*100:+.1f}%")
             print()
     else:
         print("  Nessuna value bet trovata oggi.")
