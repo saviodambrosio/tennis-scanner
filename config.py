@@ -43,11 +43,6 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")      # token del bot
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")  # chat_id destinatario
 TELEGRAM_ABILITATO = True    # interruttore master: True = invia, False = solo console
 
-# --- SCHEDULER ---
-SCHEDULER_ORA_MATTINA = "08:30"   # orario scansione mattutina
-SCHEDULER_ORA_SERA    = "21:00"   # orario scansione serale
-SCHEDULER_ABILITATO   = False     # interruttore master: True = attiva loop scheduler
-
 # --- DATI STORICI GRATUITI (Jeff Sackmann GitHub) ---
 # Questi vengono scaricati automaticamente da data_loader.py
 ATP_DATA_URL = "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_{year}.csv"

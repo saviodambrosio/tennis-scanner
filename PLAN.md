@@ -1,27 +1,24 @@
-# TENNIS SCANNER — PIANO COMPLETO E DEFINITIVO
-> Questo file è la "memoria" del progetto. Leggilo integralmente prima di qualsiasi sessione.
-> Aggiornato al 13/05/2026.
+# TENNIS SCANNER — DOCUMENTO DI STATO
+> Memoria tecnica del progetto. Aggiornato al 09/06/2026.
 
 ---
 
 ## OBIETTIVO DEL PROGETTO
-Scanner automatico per value bet nel tennis, ispirato alle giocate di professionisti
-("sandrone" su Telegram) che fanno ~10% ROI sul lungo termine.
-Il sistema gira autonomamente su VPS Windows e manda report via Telegram ogni mattina e sera.
+Scanner per value bet nel tennis: stima le probabilità di vittoria con modelli
+quantitativi (Elo e Markov punto-per-punto) e le confronta con le quote live dei
+bookmaker per individuare scommesse a valore atteso positivo.
+Progetto completato e pubblicato come portfolio — conclusione principale: il modello
+non produce CLV positivo su mercati liquidi ATP/WTA.
 
 ---
 
 ## STACK TECNICO
-- Python 3.10 (locale Windows) / Python 3.14.4 (VPS)
+- Python 3.10+
 - VS Code + venv Windows
   - Attivare venv: `.\venv\Scripts\Activate.ps1`
-- Librerie: pandas, numpy, requests, openpyxl, beautifulsoup4, et-xmlfile, soupsieve
-- GitHub privato: https://github.com/saviodambrosio/tennis-scanner (branch master)
-- VPS: Windows Server 2022, IP 81.31.155.107, utente Administrator
-  - Connessione: `ssh Administrator@81.31.155.107`
-  - IMPORTANTE: dopo ssh sei in cmd, scrivi `powershell` per usare PowerShell
+- Librerie: pandas, numpy, requests, openpyxl, beautifulsoup4, python-dotenv
+- GitHub pubblico: https://github.com/saviodambrosio/tennis-scanner (branch master)
 - Cartella locale: C:\Users\savio\Desktop\tennis_scanner\
-- Cartella VPS: C:\Users\Administrator\tennis-scanner\
 
 ---
 
@@ -29,55 +26,50 @@ Il sistema gira autonomamente su VPS Windows e manda report via Telegram ogni ma
 
 ```
 tennis_scanner/
-├── config.py                    # API keys e tutti i parametri configurabili
+├── config.py                    # Parametri e soglie (segreti via .env)
 ├── main.py                      # Entry point: lancia Scanner A poi Scanner B
-├── scheduler.py                 # Loop automatico (SCHEDULER_ABILITATO=False)
+├── valida_modelli.py            # Validazione CLV: Elo vs Markov vs closing line
+├── test_markov.py               # Test unitari matematica Markov
 ├── requirements.txt
-├── pro_bets.csv                 # Giocate Pro storiche (~230 righe, aggiornato 29/04/2026)
+├── .env.example                 # Template chiavi (valori reali in .env, ignorato da git)
 ├── modules/
+│   ├── markov.py                # Modello Markov punto-per-punto (Barnett-Clarke)
 │   ├── elo_tennisabstract.py    # Scarica/carica Elo da Tennis Abstract (1060 giocatori)
-│   ├── signals.py               # Formula EV = (prob_elo × quota) - 1
+│   ├── signals.py               # Probabilità da Elo + calcolo EV
 │   ├── scanner.py               # Scanner A — Money Line
 │   ├── scanner_handicap.py      # Scanner B — Handicap Games + Sets
-│   ├── analisi_margine.py       # Analisi margine games per fascia Elo (calibrazione)
 │   ├── odds_apiio.py            # Quote ML + handicap da Odds-API.io
 │   ├── forma_recente.py         # Forma recente, H2H, fatica
 │   ├── data_2025.py             # Download dati TML-Database + Tennisexplorer
 │   └── notifiche_telegram.py    # Invio report + Excel su Telegram
 ├── data/
-│   ├── storico/
-│   │   ├── atp_2025_tml.csv     # 2944 partite 2025 formato Sackmann
-│   │   ├── atp_2026_tml.csv     # 137 partite 2026 (fermo a gennaio)
-│   │   └── risultati_recenti.csv # ~18838 partite ultimi 60gg da Tennisexplorer
-│   └── elo_cache/
-│       ├── tennis_abstract_elo.csv
-│       └── last_update.txt
+│   ├── storico/                 # CSV partite ATP/WTA (Sackmann format)
+│   └── elo_cache/               # Cache Elo Tennis Abstract (24h)
 └── data/value_bets_log.xlsx     # Log giocate (2 sheet: Value Bets Log + Handicap Bets)
 ```
 
 ---
 
-## CONFIG.PY — TUTTI I PARAMETRI
+## CONFIG.PY — PARAMETRI PRINCIPALI
 
 ```python
-ODDS_API_IO_KEY = "97d4118388bad3aca1519306bcadbdf54fa4084eaacf97699c667b6e9986ed4a"
-TELEGRAM_TOKEN = "..."           # Token bot Telegram (attivo)
-TELEGRAM_CHAT_ID = ...           # INTERO senza virgolette — IMPORTANTE
+# Segreti letti da .env (mai hardcoded)
+ODDS_API_IO_KEY = os.getenv("ODDS_API_IO_KEY", "")
+TELEGRAM_TOKEN  = os.getenv("TELEGRAM_TOKEN", "")
+
+MODELLO = "markov"               # "elo" o "markov"
 TELEGRAM_ABILITATO = True
-SCHEDULER_ABILITATO = False      # False: usa Windows Task Scheduler sulla VPS
-SCHEDULER_ORA_MATTINA = "08:30"
-SCHEDULER_ORA_SERA = "21:00"
-EV_MINIMO = 0.09                 # 9% EV lordo minimo (era 0.05, alzato deliberatamente)
-EV_MAX = None                    # Nessun cap EV superiore
-ODDS_MIN = 1.40                  # Quota minima assoluta per scansionare
-ODDS_MAX = 6.00                  # Quota massima assoluta per scansionare
-ODDS_MIN_VALUE = 1.80            # Quota minima per VALUE BET (filtro Pro)
-ODDS_MAX_VALUE = 4.00            # Quota massima per VALUE BET (filtro Pro)
+EV_MINIMO = 0.09                 # 9% EV lordo minimo
+EV_MAX = None
+ODDS_MIN = 1.40
+ODDS_MAX = 6.00
+ODDS_MIN_VALUE = 1.80            # Filtro range Pro
+ODDS_MAX_VALUE = 4.00
 ```
 
-NOTA IMPORTANTE sull'EV: L'EV è LORDO — non considera l'aggio del bookmaker (~6%).
+NOTA EV: L'EV è LORDO — non considera l'aggio del bookmaker (~6%).
 Per avere valore reale positivo serve EV lordo > 9% (aggio 6% + margine 3%).
-EV_MINIMO = 0.09 è già calibrato per coprire l'aggio.
+EV_MINIMO = 0.09 è calibrato per coprire l'aggio.
 
 ---
 
@@ -240,28 +232,6 @@ Handicap sets:
 
 ---
 
-## VPS SETUP
-
-Windows Server 2022, versione 10.0.20348.4648, nome macchina COPIER202
-IP: 81.31.155.107, utente: Administrator
-
-Task Scheduler (SYSTEM = gira senza utente loggato):
-  TennisScanner_Mattina: 08:30 daily
-  TennisScanner_Sera: 21:00 daily
-  Comando: cmd /c cd C:\Users\Administrator\tennis-scanner && git pull && python main.py
-
-Verificare stato: schtasks /query /tn "TennisScanner_Mattina" /fo LIST
-Deve mostrare "Interattivo/Background" (NON "Solo interattivo").
-
-Ricreare se necessario:
-  schtasks /delete /tn "TennisScanner_Mattina" /f
-  schtasks /create /tn "TennisScanner_Mattina" /tr "cmd /c cd C:\Users\Administrator\tennis-scanner && git pull && python main.py" /sc daily /st 08:30 /ru SYSTEM /f
-
-NOTA: Questa non sembra una VPS cloud classica ma un server fisico in rete
-(nome COPIER202, problemi con BITS service). Funziona ma potrebbe avere limitazioni.
-
----
-
 ## TELEGRAM
 
 TELEGRAM_CHAT_ID deve essere INTERO, non stringa.
@@ -294,28 +264,32 @@ Pulizia automatica duplicati ad ogni lancio.
 
 ---
 
-## DA FARE — PRIORITÀ
+## STATO FINALE DEL PROGETTO
 
-Alta priorità:
-1. Dashboard ROI Excel — terzo sheet con win rate, ROI reale, CLV medio automatico
-2. Filtro movimento quote — escludere bet dove quota sale dopo apertura
-3. Analisi pattern Pro — confronto sistematico nostre giocate vs pro_bets.csv
+### Implementato e funzionante
+- Scanner A — Money Line (Elo + Markov, fetch quote in parallelo) ✅
+- Scanner B — Handicap Games + Sets ✅
+- Modello Markov punto-per-punto (Barnett-Clarke) con adjustment contestuali ✅
+- Modello Elo con forma recente, H2H decay, fatica ✅
+- Validazione CLV su 57 match — risultato negativo documentato ✅
+- Log Excel con deduplicazione e aggiornamento esiti W/L ✅
+- Notifiche Telegram con Excel allegato ✅
+- Segreti in .env, mai hardcoded ✅
+- README bilingue (EN + IT) con risultati onesti ✅
+- Test unitari modello Markov ✅
 
-Media priorità:
-4. Aprire chat gruppo Telegram con amico (chat ID negativo)
-5. Backtest con quote storiche reali
+### Deliberatamente abbandonato
+- **VPS/scheduler automatico** — progetto finalizzato come portfolio locale; la complessità
+  operativa (Task Scheduler, git pull automatico, Python 3.14 compatibility) non aggiungeva
+  valore dimostrativo una volta che il CLV negativo era confermato
+- **Dashboard ROI Excel** — irrilevante con CLV sistematicamente negativo
+- **Filtro movement quote** — richiederebbe polling continuo incompatibile con uso locale
+- **Completamento esiti Challenger** — dati troppo rumorosi per validazione statistica seria
 
-Completati:
-- Threading parallelo quote (2-5x speedup) ✅
-- Filtro range Pro 1.80-4.00 ✅
-- EV_MINIMO al 9% effettivamente usato ✅
-- Ricalibrazione pesi modello ✅
-- Fix duplicati Excel completo ✅
-- Telegram con Excel allegato ✅
-- VPS con scheduler automatico ✅
-- Scanner B Handicap Games + Sets ✅
-- H2H storico con decay ✅
-- Fatica ultimi 2 giorni ✅
+### Direzioni future (documentate nel README)
+- Mercati illiquidi (ITF / Challenger minori) dove i bookmaker usano modelli grezzi
+- Segnali di line-movement nelle prime ore dopo apertura quote
+- Dati proprietari (infortuni, calendario) non ancora nel prezzo di mercato
 
 ---
 
@@ -327,11 +301,11 @@ Completati:
 # Lanciare scanner completo
 python main.py
 
-# Connettersi VPS
-ssh Administrator@81.31.155.107
+# Validazione modelli
+python valida_modelli.py
 
-# Verificare task scheduler VPS
-schtasks /query /tn "TennisScanner_Mattina" /fo LIST
+# Test unitari Markov
+python test_markov.py
 
 # Commit e push
 git add .
@@ -354,5 +328,4 @@ Corregge casi in cui home/away sono scambiati nell'API.
 Placeholder API: R16P1, WQF3, ecc. = partite future con giocatori non ancora noti.
 Vengono sostituiti dai nomi reali man mano che i turni vengono giocati.
 
-Python 3.14 sulla VPS: alcune versioni package non disponibili.
-numpy 2.2.6 non esiste per Python 3.14, installato 2.4.4 con --only-binary=:all:
+Python: testato su 3.10. Richiede beautifulsoup4 e openpyxl (inclusi in requirements.txt).

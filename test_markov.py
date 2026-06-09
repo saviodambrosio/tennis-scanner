@@ -157,8 +157,8 @@ if __name__ == "__main__":
         test_best_of_5()
         test_superficie()
         print("\n" + "=" * 60)
-        print("  TUTTI I TEST SUPERATI ✅")
+        print("  TUTTI I TEST SUPERATI [OK]")
         print("=" * 60)
     except AssertionError as e:
-        print(f"\n❌ ERRORE: {e}")
+        print(f"\n[FAIL] ERRORE: {e}")
         sys.exit(1)
