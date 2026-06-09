@@ -4,13 +4,17 @@
 # =====================================================
 # Modifica qui tutti i parametri senza toccare il codice
 
-# --- API KEYS (da inserire quando le attivi) ---
-ODDS_API_KEY = ""         # The Odds API - piano PRO
-RAPIDAPI_KEY = ""         # RapidAPI - Tennis stats
-BETFAIR_API_KEY = "rKaJW3IAXqecVcUf"      # Betfair Exchange API key
-BETFAIR_USERNAME = "djpannocchia2@gmail.com"     # Username account Betfair amico
-BETFAIR_PASSWORD = "Patong2013%"     # Password account Betfair amico
-ODDS_API_IO_KEY = "97d4118388bad3aca1519306bcadbdf54fa4084eaacf97699c667b6e9986ed4a"
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# --- API KEYS ---
+ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")         # The Odds API - piano PRO
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")         # RapidAPI - Tennis stats
+BETFAIR_API_KEY = os.getenv("BETFAIR_API_KEY", "")   # Betfair Exchange API key
+BETFAIR_USERNAME = os.getenv("BETFAIR_USERNAME", "")  # Username account Betfair amico
+BETFAIR_PASSWORD = os.getenv("BETFAIR_PASSWORD", "")  # Password account Betfair amico
+ODDS_API_IO_KEY = os.getenv("ODDS_API_IO_KEY", "")
 
 # --- SOGLIE ALGORITMO ---
 EV_MINIMO = 0.09         # Vantaggio minimo richiesto (9%)
@@ -34,9 +38,9 @@ PRO_BETS_FILE = "data/pro_bets.csv"
 MATCH_RATE_TARGET = 0.80  # Soglia minima di coincidenza con i Pro (80%)
 
 # --- NOTIFICHE TELEGRAM ---
-TELEGRAM_BOT_TOKEN = ""      # legacy alias (non usato dai nuovi moduli)
-TELEGRAM_TOKEN = "8711682098:AAGlH3f9IBjjduy2Nt5NvUWyWM6IZ9xoI4s"           # token del bot (da inserire per attivare)
-TELEGRAM_CHAT_ID = "-5266241019"         # chat_id destinatario
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_TOKEN", "")  # legacy alias
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")      # token del bot
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")  # chat_id destinatario
 TELEGRAM_ABILITATO = True    # interruttore master: True = invia, False = solo console
 
 # --- SCHEDULER ---
