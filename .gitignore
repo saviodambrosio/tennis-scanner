@@ -7,3 +7,5 @@ data/storico/
 data/value_bets_log.xlsx
 data/value_bets_log_backup*.xlsx
 *.xlsx
+*_preview.txt
+missing_closing.txt
