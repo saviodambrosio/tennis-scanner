@@ -97,6 +97,96 @@ Entrambi i modelli condividono la stessa interfaccia, così lo scanner può alte
 
 ---
 
+## Esempio di output
+
+Lanciare `python main.py` avvia entrambi gli scanner in sequenza, recupera le quote
+live e invia un report Telegram con il log Excel allegato. Di seguito un'esecuzione
+reale accorciata (10 giugno 2026, stagione sull'erba in pieno svolgimento):
+
+```
+$ python main.py
+=================================================================
+  TENNIS SCANNER SUITE - 10/06/2026 09:48
+=================================================================
+
+=================================================================
+  SCANNER A — MONEY LINE
+=================================================================
+
+🔒 Safety check fonti dati...
+  Tennis Abstract : ✅ Tennis Abstract raggiungibile
+  Odds-API.io     : ✅ Status 200
+
+✅ Tutte le fonti disponibili — procedo
+
+⚙️  Caricamento Elo Tennis Abstract...
+  📦 Cache Elo valida (0.4h fa) — uso quella
+✅ 1055 giocatori caricati
+
+📅 Recupero partite da Odds-API.io...
+  [+] 2026-06-10: 357 partite trovate
+✅ 146 partite ATP/WTA trovate
+
+=================================================================
+  RISULTATI SCANNER
+=================================================================
+  Analizzate con quote : 20
+  Senza quote          : 14
+  Non trovati in Elo   : 99
+  VALUE BET ✅         : 5
+=================================================================
+
+🎯 VALUE BET TROVATE:
+
+  ✅ Panna Udvardy vs Daria Snigur
+     Torneo    : WTA - S-Hertogenbosch, Netherlands
+     Superficie: grass | Elo: TA-grass+forma [markov]
+     Quota     : 3.1
+     Elo    : prob 43.2% | equa 2.31 | EV +34.1%
+     Markov : prob 46.0% | equa 2.18 | EV +42.5%
+
+  ✅ Martin Landaluce vs Taylor Fritz
+     Torneo    : ATP - Stuttgart, Germany
+     Superficie: hard | Elo: TA-hard+forma [markov]
+     Quota     : 3.0
+     Elo    : prob 46.5% | equa 2.15 | EV +39.5%
+     Markov : prob 38.5% | equa 2.60 | EV +15.4%
+
+  ✅ Jaqueline Cristian vs Katie Boulter
+     Torneo    : WTA - London, Great Britain
+     Superficie: hard | Elo: TA-hard+forma [markov]
+     Quota     : 2.15
+     Elo    : prob 51.9% | equa 1.93 | EV +11.5%
+     Markov : prob 51.9% | equa 1.93 | EV +11.6%
+
+=================================================================
+  SCANNER B — HANDICAP GAMES
+=================================================================
+
+  Partite analizzate   : 148
+  VALUE BET ✅         : 13
+
+  ✅ Marin Cilic (-1.5 games)  vs  Nuno Borges
+     Torneo : ATP - S-Hertogenbosch, Netherlands  |  GRASS  |  Elo diff: 160
+     Quota  : 3.1  |  Prob: 57.8%  |  EV: +79.3%
+
+  ✅ Panna Udvardy (+3.5 games)  vs  Daria Snigur
+     Torneo : WTA - S-Hertogenbosch, Netherlands  |  GRASS  |  Elo diff: 47
+     Quota  : 2.1  |  Prob: 71.9%  |  EV: +51.1%
+
+=================================================================
+  RIEPILOGO TOTALE
+=================================================================
+  Value bet ML trovate       : 5
+  Value bet Handicap trovate : 13
+  Risultati salvati in data/value_bets_log.xlsx
+=================================================================
+[Telegram] Messaggio inviato OK
+[Telegram] File Excel inviato OK
+```
+
+---
+
 ## Risultati principali
 
 Il sistema è stato eseguito su partite reali (ATP/WTA Roma, Challenger di Wuxi e altri), e ogni giocata è stata registrata con la quota presa e la quota di chiusura.
