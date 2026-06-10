@@ -16,6 +16,8 @@ Questo progetto costruisce una pipeline end-to-end che:
 
 **Il risultato più importante è negativo:** un'analisi rigorosa del Closing Line Value (CLV) ha dimostrato che il modello *non* batte il mercato. Questo README documenta sia l'ingegneria sia quella conclusione, perché saper riconoscere *quando una strategia non funziona* — ed essere in grado di dimostrarlo — vale più di un backtest che sembra buono.
 
+![Report Telegram con Excel allegato](assets/telegram_report.png)
+
 ---
 
 ## Perché questo progetto
@@ -190,6 +192,10 @@ $ python main.py
 > dimostra che il vantaggio reale è molto inferiore. Questo output illustra cosa produce
 > lo scanner, non una strategia profittevole.*
 
+![Output terminale — value bet trovate](assets/terminal_value_bets.png)
+
+![Output terminale — riepilogo finale e invio Telegram](assets/terminal_summary.png)
+
 ---
 
 ## Risultati principali
@@ -205,6 +211,10 @@ Il sistema è stato eseguito su partite reali (ATP/WTA Roma, Challenger di Wuxi 
 | MAE vs Closing Line | 0.0704 | 0.0724 | Elo (marginalmente più vicino al mercato) |
 
 Il modello Markov predice gli esiti in modo leggermente più accurato dell'Elo — un miglioramento piccolo ma costante.
+
+![Log Excel — tab Value Bets](assets/excel_value_bets.png)
+
+![Log Excel — tab Handicap Bets](assets/excel_handicap_bets.png)
 
 ### La conclusione onesta: il Closing Line Value
 

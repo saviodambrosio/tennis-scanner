@@ -16,6 +16,8 @@ This project builds an end-to-end pipeline that:
 
 **The most important finding is a negative one:** rigorous analysis of Closing Line Value (CLV) showed the model does *not* beat the market. This README documents both the engineering and that conclusion, because knowing *when a strategy doesn't work* — and being able to prove it — matters more than a backtest that looks good.
 
+![Telegram report with Excel attached](assets/telegram_report.png)
+
 ---
 
 ## Why this project
@@ -190,6 +192,10 @@ $ python main.py
 > the real edge is far smaller. This output illustrates what the scanner produces, not a
 > profitable strategy.*
 
+![Terminal output — value bets found](assets/terminal_value_bets.png)
+
+![Terminal output — final summary and Telegram delivery](assets/terminal_summary.png)
+
 ---
 
 ## Key results
@@ -205,6 +211,10 @@ The system was run on real matches (ATP/WTA Rome, Wuxi Challenger, and others), 
 | MAE vs Closing Line | 0.0704 | 0.0724 | Elo (marginally closer to market) |
 
 The Markov model predicts outcomes slightly more accurately than Elo — a small but consistent improvement.
+
+![Excel log — Value Bets tab](assets/excel_value_bets.png)
+
+![Excel log — Handicap Bets tab](assets/excel_handicap_bets.png)
 
 ### The honest conclusion: Closing Line Value
 
