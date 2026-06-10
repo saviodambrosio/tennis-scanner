@@ -185,6 +185,11 @@ $ python main.py
 [Telegram] File Excel inviato OK
 ```
 
+> *Nota: gli EV elevati mostrati sono stime del modello stesso. Come spiegato nella
+> sezione Risultati principali qui sotto, sono sistematicamente gonfiati — l'analisi CLV
+> dimostra che il vantaggio reale è molto inferiore. Questo output illustra cosa produce
+> lo scanner, non una strategia profittevole.*
+
 ---
 
 ## Risultati principali

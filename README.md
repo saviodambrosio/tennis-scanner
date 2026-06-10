@@ -185,6 +185,11 @@ $ python main.py
 [Telegram] File Excel inviato OK
 ```
 
+> *Note: the high EV figures shown are the model's own estimates. As detailed in the
+> Key results section below, these are systematically inflated — the CLV analysis shows
+> the real edge is far smaller. This output illustrates what the scanner produces, not a
+> profitable strategy.*
+
 ---
 
 ## Key results
